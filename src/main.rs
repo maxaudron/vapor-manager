@@ -4,7 +4,7 @@
 use acc_tools::ACCTools;
 
 fn main() -> eframe::Result<()> {
-    let subscriber = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).finish();
+    let subscriber = tracing_subscriber::fmt().with_max_level(tracing::Level::TRACE).finish();
     let _ = tracing::subscriber::set_global_default(subscriber);
 
     let native_options = eframe::NativeOptions {

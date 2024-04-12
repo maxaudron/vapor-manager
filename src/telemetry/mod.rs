@@ -7,6 +7,7 @@ use std::sync::{atomic::AtomicBool, Arc};
 pub use shm::*;
 pub use data::*;
 use thiserror::Error;
+use tracing::{debug, trace};
 
 pub struct Telemetry {
     pub connected: bool,
@@ -20,6 +21,9 @@ impl Telemetry {
         let graphics_data = PageFileGraphics::get_reference()?;
         let physics_data = PageFilePhysics::get_reference()?;
         let static_data = PageFileStatic::get_reference()?;
+        debug!("got initial data: {:?}", static_data);
+        debug!("got initial data: {:?}", physics_data);
+        debug!("got initial data: {:?}", graphics_data);
 
         Ok(Self {
             connected: graphics_data.status.data != 0,
@@ -34,11 +38,14 @@ impl Telemetry {
         let physics_data = PageFilePhysics::get_reference()?;
 
         if graphics_data.packet_id > self.graphics.packet_id {
-            self.graphics = Graphics::from(*graphics_data)
+            // trace!("updated graphics data");
+            self.connected = graphics_data.status.data != 0;
+            self.graphics = Graphics::from(*graphics_data);
         }
 
         if physics_data.packet_id > self.physics.packet_id {
-            self.physics = Physics::from(*physics_data)
+            // trace!("updated physics data");
+            self.physics = Physics::from(*physics_data);
         }
 
         Ok(())

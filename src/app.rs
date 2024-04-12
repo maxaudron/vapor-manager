@@ -3,9 +3,10 @@ use std::sync::Arc;
 // use simetry::assetto_corsa_competizione::Client as TelemetryClient;
 
 use egui::Color32;
+use tracing::{debug, error};
 
 use crate::{
-    setup::Setup,
+    setup::{Setup, SetupManager},
     telemetry::{self, Telemetry},
 };
 
@@ -19,7 +20,7 @@ pub struct ACCTools {
     value: f32,
 
     #[serde(skip)]
-    setup: Option<Setup>,
+    setup_manager: Option<SetupManager>,
     #[serde(skip)]
     telemetry: Option<Telemetry>,
 }
@@ -30,7 +31,7 @@ impl Default for ACCTools {
             // Example stuff:
             label: "Hello World!".to_owned(),
             value: 2.7,
-            setup: None,
+            setup_manager: None,
             telemetry: None,
         }
     }
@@ -59,16 +60,33 @@ impl eframe::App for ACCTools {
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
-        // For inspiration and more examples, go to https://emilk.github.io/egui
-
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if let Some(telemetry) = self.telemetry.as_mut() {
-            let _ = telemetry.refresh();
+            if let Err(e) = telemetry.refresh() {
+                error!("failed to refresh data: {:?}", e)
+            }
+
+            if self.setup_manager.is_none() && telemetry.connected {
+                debug!("discovering setups...");
+                match SetupManager::discover(
+                    &telemetry.static_data.car_model,
+                    &telemetry.static_data.track,
+                ) {
+                    Ok(mut s) => {
+                        s.adjust_pressure(
+                            telemetry.physics.air_temperature.round() as i32,
+                            telemetry.physics.road_temperature.round() as i32,
+                        );
+                        s.store();
+                        self.setup_manager = Some(s);
+                    }
+                    Err(e) => error!("failed to load setups: {}", e),
+                };
+            }
         } else {
             match Telemetry::connect() {
                 Ok(telemetry) => self.telemetry = Some(telemetry),
-                Err(_) => (),
+                Err(e) => error!("failed to connect to data: {:?}", e),
             }
         }
 
@@ -137,6 +155,9 @@ impl eframe::App for ACCTools {
                         &telemetry.static_data,
                     )
                 });
+                if let Some(setup_manager) = self.setup_manager.as_mut() {
+                    crate::widgets::setups(ui, setup_manager)
+                }
             }
         });
     }

@@ -4,6 +4,8 @@ pub fn session_info(ui: &mut egui::Ui, physics: &Physics, graphics: &Graphics, s
     ui.vertical(|ui| {
         ui.label(format!("Type: {:?}", graphics.session));
         ui.label(format!("Track: {}", static_data.track));
+        ui.label(format!("Car: {}", static_data.car_model));
+
         ui.label(format!("Driver: {} {}", static_data.player_name, static_data.player_surname));
         ui.label(format!("Time Left: {:?}", graphics.session_time_left));
 

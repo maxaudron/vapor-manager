@@ -35,14 +35,14 @@ pub trait SharedMemoryPage {
         let handle: HANDLE = unsafe {
             OpenFileMappingA(FILE_MAP_READ.0, false, PCSTR::from_raw(Self::NAME.as_ptr()))
         }
-        .map_err(TelemetryError::ConnectionFailed);
+        .map_err(|e| TelemetryError::ConnectionFailed)?;
 
         let file_view: *const c_void =
             unsafe { MapViewOfFile(handle, FILE_MAP_READ, 0, 0, 0) }.Value;
-        trace!("map view of file: {:?}", file_view);
+        // trace!("map view of file: {:?}", file_view);
 
         let data: &Self = unsafe { &(*(file_view as *const Self)) };
-        trace!("data: {:?}", data);
+        // trace!("data: {:?}", data);
 
         Ok(data)
     }
