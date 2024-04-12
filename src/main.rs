@@ -1,10 +1,11 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use acc_tools::TemplateApp;
+use acc_tools::ACCTools;
 
 fn main() -> eframe::Result<()> {
-    tracing_subscriber::fmt::init();
+    let subscriber = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).finish();
+    let _ = tracing::subscriber::set_global_default(subscriber);
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -18,8 +19,8 @@ fn main() -> eframe::Result<()> {
         ..Default::default()
     };
     eframe::run_native(
-        "eframe template",
+        "ACC Tools",
         native_options,
-        Box::new(|cc| Box::new(TemplateApp::new(cc))),
+        Box::new(|cc| Box::new(ACCTools::new(cc))),
     )
 }

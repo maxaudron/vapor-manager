@@ -23,6 +23,38 @@
             toolchainConfig = {
               channel = "stable";
               components = [ "rustfmt" "rust-src" ];
+              targets = [ "x86_64-pc-windows-gnu" ];
+            };
+
+            crates."acc-tools" = {
+              targets."x86_64-pc-windows-gnu" = {
+                default = true;
+                drvConfig.mkDerivation = {
+                  nativeBuildInputs = with pkgs; [ pkgsCross.mingwW64.stdenv.cc ];
+                  buildInputs = with pkgs.pkgsCross.mingwW64.windows; [ mingw_w64_pthreads ];
+                };
+              };
+
+              drvConfig.mkDerivation = {
+                nativeBuildInputs = with pkgs; [ pkgsCross.mingwW64.stdenv.cc ];
+                buildInputs = with pkgs.pkgsCross.mingwW64.windows; [ mingw_w64_pthreads ];
+              };
+              runtimeLibs = with pkgs; [
+                libxkbcommon
+                libGL
+
+                # WINIT_UNIX_BACKEND=wayland
+                wayland
+
+                # WINIT_UNIX_BACKEND=x11
+                xorg.libXcursor
+                xorg.libXrandr
+                xorg.libXi
+                xorg.libX11
+
+                freetype
+                fontconfig
+              ];
             };
           };
 
