@@ -1,4 +1,7 @@
-use std::{fs::File, path::Path};
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -13,25 +16,37 @@ pub enum SetupError {
     NoSetups,
 }
 
+#[derive(Debug, Default, Clone)]
 pub struct SetupManager {
     pub track: String,
     pub car: String,
+    pub target_temperature: i32,
     pub setups: Vec<Setup>,
     pub adj_setups: Vec<Setup>,
 }
 
 impl SetupManager {
-    pub fn discover(car: &str, track: &str) -> Result<SetupManager, SetupError> {
+    pub fn setup_dir(template: bool, car: &str, track: &str) -> PathBuf {
         #[cfg(windows)]
         let mut setup_dir =
             known_folders::get_known_folder_path(known_folders::KnownFolder::Documents).unwrap();
         #[cfg(not(windows))]
-        let docs = "./setups";
+        let mut setup_dir = PathBuf::from("./setups");
 
         setup_dir.push("Assetto Corsa Competizione");
-        setup_dir.push("SetupTemplates");
+        if template {
+            setup_dir.push("SetupTemplates");
+        } else {
+            setup_dir.push("Setups");
+        }
         setup_dir.push(car);
         setup_dir.push(track);
+
+        setup_dir
+    }
+
+    pub fn discover(car: &str, track: &str) -> Result<SetupManager, SetupError> {
+        let setup_dir = Self::setup_dir(true, car, track);
 
         debug!("loading setups from: {:?}", setup_dir);
         let setups = std::fs::read_dir(setup_dir).map_err(|e| SetupError::NoSetups)?;
@@ -39,6 +54,7 @@ impl SetupManager {
         Ok(SetupManager {
             track: track.to_string(),
             car: car.to_string(),
+            target_temperature: 0,
             setups: setups
                 .into_iter()
                 .filter_map(|f| f.ok())
@@ -56,21 +72,12 @@ impl SetupManager {
         new.iter_mut()
             .for_each(|setup| setup.adjust_pressure(air_temperature, road_temperature));
         self.adj_setups = new;
+        self.target_temperature = air_temperature;
     }
 
-    pub fn store(&self) {
-        #[cfg(windows)]
-        let mut setup_dir =
-            known_folders::get_known_folder_path(known_folders::KnownFolder::Documents).unwrap();
-        #[cfg(not(windows))]
-        let docs = "./setups";
-
-        setup_dir.push("Assetto Corsa Competizione");
-        setup_dir.push("Setups");
-        setup_dir.push(&self.car);
-        setup_dir.push(&self.track);
-
-        self.adj_setups.iter().for_each(|s| s.save(&setup_dir))
+    pub fn store(&mut self) {
+        let setup_dir = Self::setup_dir(false, &self.car, &self.track);
+        self.adj_setups.iter_mut().for_each(|s| s.save(&setup_dir))
     }
 }
 
@@ -82,6 +89,10 @@ pub struct Setup {
     pub air_temperature: i32,
     #[serde(skip)]
     pub road_temperature: i32,
+    #[serde(skip)]
+    pub path: PathBuf,
+    #[serde(skip)]
+    pub template_path: Option<PathBuf>,
     #[serde(rename = "carName")]
     pub car_name: String,
     #[serde(rename = "basicSetup")]
@@ -107,15 +118,16 @@ impl Setup {
         let mut setup: Setup = serde_json::from_str(&data).unwrap();
 
         // 21c 26c NAME
-        // 0123456
+        // 012345678
         setup.air_temperature = (&name[0..2]).parse().unwrap();
         setup.road_temperature = (&name[4..6]).parse().unwrap();
+        setup.path = path.to_owned();
         setup.name = name;
 
         setup
     }
 
-    pub fn save(&self, path: &Path) {
+    pub fn path(&self, path: &Path) -> PathBuf {
         let name = format!(
             "{:?}c {:?}c {}",
             self.air_temperature,
@@ -124,10 +136,25 @@ impl Setup {
         );
         let mut path = path.to_owned();
         path.push(format!("{}.json", name));
+        path
+    }
 
+    pub fn save(&mut self, path: &Path) {
+        if !path.exists() {
+            std::fs::create_dir_all(path).unwrap();
+        }
+
+        let path = self.path(path);
         debug!("saving setup to {:?}", path);
+        self.template_path = Some(path.clone());
         let file = File::create(path).unwrap();
         serde_json::to_writer_pretty(file, self).unwrap()
+    }
+
+    pub fn delete(&self, path: &Path) {
+        let path = self.path(path);
+        debug!("deleting setup: {:?}", path);
+        std::fs::remove_file(path).unwrap();
     }
 
     pub fn adjust_pressure(&mut self, air_temperature: i32, road_temperature: i32) {
@@ -148,6 +175,15 @@ impl Setup {
             .pit_strategy
             .iter_mut()
             .for_each(|s| s.tyres.tyre_pressure.iter_mut().for_each(|i| *i += -diff))
+    }
+}
+
+impl Drop for Setup {
+    fn drop(&mut self) {
+        println!("aaaa");
+        if let Some(path) = self.template_path.as_ref() {
+            let _ = std::fs::remove_file(path);
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 // use simetry::assetto_corsa_competizione::Client as TelemetryClient;
 
@@ -7,7 +7,8 @@ use tracing::{debug, error};
 
 use crate::{
     setup::{Setup, SetupManager},
-    telemetry::{self, Telemetry},
+    telemetry::{self, Status, Telemetry},
+    State,
 };
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -20,36 +21,33 @@ pub struct ACCTools {
     value: f32,
 
     #[serde(skip)]
-    setup_manager: Option<SetupManager>,
-    #[serde(skip)]
-    telemetry: Option<Telemetry>,
-}
-
-impl Default for ACCTools {
-    fn default() -> Self {
-        Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
-            setup_manager: None,
-            telemetry: None,
-        }
-    }
+    state: Arc<RwLock<State>>,
 }
 
 impl ACCTools {
     /// Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>, state: Arc<RwLock<State>>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+            let mut acctools = eframe::get_value(storage, eframe::APP_KEY).unwrap_or(Self {
+                label: "Hello World!".to_owned(),
+                value: 2.7,
+                state: state.clone(),
+            });
+
+            acctools.state = state;
+            return acctools;
         }
 
-        Default::default()
+        Self {
+            label: "Hello World!".to_owned(),
+            value: 2.7,
+            state,
+        }
     }
 }
 
@@ -61,77 +59,33 @@ impl eframe::App for ACCTools {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if let Some(telemetry) = self.telemetry.as_mut() {
-            if let Err(e) = telemetry.refresh() {
-                error!("failed to refresh data: {:?}", e)
-            }
+        let state = self.state.read().unwrap();
 
-            if self.setup_manager.is_none() && telemetry.connected {
-                debug!("discovering setups...");
-                match SetupManager::discover(
-                    &telemetry.static_data.car_model,
-                    &telemetry.static_data.track,
-                ) {
-                    Ok(mut s) => {
-                        s.adjust_pressure(
-                            telemetry.physics.air_temperature.round() as i32,
-                            telemetry.physics.road_temperature.round() as i32,
-                        );
-                        s.store();
-                        self.setup_manager = Some(s);
-                    }
-                    Err(e) => error!("failed to load setups: {}", e),
-                };
-            }
-        } else {
-            match Telemetry::connect() {
-                Ok(telemetry) => self.telemetry = Some(telemetry),
-                Err(e) => error!("failed to connect to data: {:?}", e),
-            }
-        }
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            // The top panel is often a good place for a menu bar:
+            ui.style_mut().debug.debug_on_hover = true;
+            ui.visuals_mut().override_text_color = Some(Color32::WHITE);
 
-        let top_panel_bg = if self.telemetry.is_none() {
-            Color32::DARK_RED
-        } else {
-            Color32::BLACK
-        };
-
-        egui::TopBottomPanel::top("top_panel")
-            .frame(egui::Frame::default().outer_margin(0.0).fill(top_panel_bg))
-            .show(ctx, |ui| {
-                // The top panel is often a good place for a menu bar:
-                ui.style_mut().debug.debug_on_hover = true;
-                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
-
-                egui::menu::bar(ui, |ui| {
-                    // NOTE: no File->Quit on web pages!
-                    let is_web = cfg!(target_arch = "wasm32");
-                    if !is_web {
-                        ui.menu_button("File", |ui| {
-                            if ui.button("Quit").clicked() {
-                                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                            }
-                        });
-                        ui.add_space(16.0);
-                    }
-
-                    egui::widgets::global_dark_light_mode_buttons(ui);
-                });
-
-                if self.telemetry.is_none() {
-                    ui.vertical_centered_justified(|ui| {
-                        ui.label(
-                            egui::RichText::new("No connection to Assetto Corsa Competizione")
-                                .font(egui::FontId::proportional(24.0)),
-                        )
+            egui::menu::bar(ui, |ui| {
+                // NOTE: no File->Quit on web pages!
+                let is_web = cfg!(target_arch = "wasm32");
+                if !is_web {
+                    ui.menu_button("File", |ui| {
+                        if ui.button("Quit").clicked() {
+                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        }
                     });
+                    ui.add_space(16.0);
                 }
+
+                egui::widgets::global_dark_light_mode_buttons(ui);
             });
+        });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.style_mut().debug.debug_on_hover = true;
 
-            if self.telemetry.is_none() {
+            if state.telemetry.graphics.status == Status::Off {
                 egui::Frame::default()
                     .fill(Color32::DARK_RED)
                     .show(ui, |ui| {
@@ -142,22 +96,16 @@ impl eframe::App for ACCTools {
                     });
             } else {
                 ui.horizontal(|ui| {
-                    crate::widgets::tyre_pressure(
-                        ui,
-                        &self.telemetry.as_ref().unwrap().physics,
-                        self.value,
-                    );
-                    let telemetry = self.telemetry.as_ref().unwrap();
+                    crate::widgets::tyre_pressure(ui, &state.telemetry.physics, self.value);
                     crate::widgets::session_info(
                         ui,
-                        &telemetry.physics,
-                        &telemetry.graphics,
-                        &telemetry.static_data,
+                        &state.telemetry.physics,
+                        &state.telemetry.graphics,
+                        &state.telemetry.static_data,
                     )
                 });
-                if let Some(setup_manager) = self.setup_manager.as_mut() {
-                    crate::widgets::setups(ui, setup_manager)
-                }
+
+                crate::widgets::setups(ui, &state.setup_manager);
             }
         });
     }
