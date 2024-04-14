@@ -49,7 +49,7 @@ impl SetupManager {
         let setup_dir = Self::setup_dir(true, car, track);
 
         debug!("loading setups from: {:?}", setup_dir);
-        let setups = std::fs::read_dir(setup_dir).map_err(|e| SetupError::NoSetups)?;
+        let setups = std::fs::read_dir(setup_dir).map_err(|_| SetupError::NoSetups)?;
 
         Ok(SetupManager {
             track: track.to_string(),

@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.btn-active-primary {
+    @apply bg-primary text-warning-content;
+}
+
+.btn-active-primary:hover {
+    @apply bg-primary text-warning-content;
+    filter: brightness(85%);
+}
