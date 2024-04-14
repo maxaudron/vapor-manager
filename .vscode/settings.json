@@ -1,8 +1,0 @@
-{
-    "terminal.integrated.env.windows": {
-        "RUST_LOG": "debug"
-    },
-    "rust-analyzer.linkedProjects": [
-        ".\\Cargo.toml"
-    ]
-}
