@@ -5,18 +5,53 @@
 use dioxus::prelude::*;
 use futures_util::stream::StreamExt;
 
-use vapor_manager::{
-    components::{
-        setups::SetupManager,
-        status_bar::StatusBar,
-        theme::{Theme, ThemeSwitcher},
-        wheels::WheelPressures,
-        debug::Debug,
-    },
+use telemetry::{SessionType, Wheels};
+
+pub mod setup;
+pub mod telemetry;
+
+// mod widgets;
+pub mod components;
+
+use components::{
+    base::{Base, Home, Settings},
+    debug::Debug,
+};
+
+use crate::{
     setup::{SetupChange, SetupManager},
     telemetry::{broadcast::BroadcastState, Telemetry},
-    State, StateChange,
 };
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum StateChange {
+    AvgTyrePressure(Wheels<f32>),
+    Weather(Weather),
+    TrackName(String),
+    SessionType(SessionType),
+    ShmConnected(bool),
+    BroadcastConnected(bool),
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct State {
+    pub debug: bool,
+    pub shm_connected: bool,
+    pub broadcast_connected: bool,
+    pub avg_tyre_pressures: Wheels<f32>,
+    pub weather: Weather,
+    pub track_name: String,
+    pub session_type: SessionType,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Weather {
+    pub ambient_temp: u8,
+    pub track_temp: u8,
+    pub clouds: u8,
+    pub rain_level: u8,
+    pub wetness: u8,
+}
 
 #[derive(Clone, Routable, Debug, PartialEq)]
 #[rustfmt::skip]
@@ -85,82 +120,5 @@ fn App() -> Element {
 
     rsx! {
         Router::<Route> {}
-    }
-}
-
-#[component]
-fn Base() -> Element {
-    let theme = use_signal(|| Theme::Mocha);
-    let route = use_route::<Route>();
-
-    let theme_lower = format!("{theme:?}").to_lowercase();
-
-    rsx! {
-        div {
-            class: "h-[100vh] w-[100vw] grid grid-rows-[auto_minmax(0,_1fr)_auto] {theme_lower} bg-crust",
-            "data-theme": "{theme:?}",
-            div { class: "grid grid-cols-2",
-                div { class: "justify-self-start",
-                    ul { class: "menu menu-horizontal rounded-box gap-2 bg-sla",
-                        li {
-                            Link {
-                                class: if (route == Route::Home {}) {
-                                    "btn btn-active-primary"
-                                } else {
-                                    "btn bg-base border-base"
-                                },
-                                to: Route::Home {},
-                                "Home"
-                            }
-                        }
-                        li {
-                            Link {
-                                class: if (route == Route::Settings {}) {
-                                    "btn btn-active-primary"
-                                } else {
-                                    "btn bg-base border-base"
-                                },
-                                to: Route::Settings {},
-                                "Settings"
-                            }
-                        }
-                        li {
-                            Link {
-                                class: if (route == Route::Debug {}) {
-                                    "btn btn-active-primary"
-                                } else {
-                                    "btn bg-base border-base"
-                                },
-                                to: Route::Debug {},
-                                "Debug"
-                            }
-                        }
-                    }
-                }
-                div { class: "justify-self-end",
-                    ThemeSwitcher { theme }
-                }
-            }
-            Outlet::<Route> {}
-            StatusBar {}
-        }
-    }
-}
-
-#[component]
-fn Settings() -> Element {
-    rsx! { "Blog post" }
-}
-
-#[component]
-fn Home() -> Element {
-    rsx! {
-        div { class: "grid grid-rows-[min-content_auto] gap-2 px-2",
-            div { class: "grid grid-cols-[min-content_auto] gap-2 h-min",
-                WheelPressures {}
-                SetupManager {}
-            }
-            div { class: "bg-base rounded-lg shadow-lg h-auto", "aaaa" }
-        }
     }
 }
