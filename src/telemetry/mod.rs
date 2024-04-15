@@ -14,7 +14,9 @@ use tracing::{debug, error};
 
 use crate::{setup::SetupChange, StateChange};
 
-#[derive(Default, Debug, Clone)]
+use self::broadcast::BroadcastMsg;
+
+#[derive(Debug, Clone)]
 pub struct Telemetry {
     pub connected: bool,
     pub static_data: StaticData,
@@ -22,6 +24,9 @@ pub struct Telemetry {
     pub graphics: Graphics,
     pub current_lap: Lap,
     pub laps: Vec<Lap>,
+
+    pub state_tx: UnboundedSender<StateChange>,
+    pub setup_tx: UnboundedSender<SetupChange>,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -56,10 +61,19 @@ impl Lap {
 }
 
 impl Telemetry {
-    pub fn new() -> Telemetry {
+    pub fn new(
+        state_tx: UnboundedSender<StateChange>,
+        setup_tx: UnboundedSender<SetupChange>,
+    ) -> Telemetry {
         Telemetry {
             connected: false,
-            ..Default::default()
+            state_tx,
+            setup_tx,
+            static_data: Default::default(),
+            physics: Default::default(),
+            graphics: Default::default(),
+            current_lap: Default::default(),
+            laps: Default::default(),
         }
     }
 
@@ -68,14 +82,9 @@ impl Telemetry {
         let physics_data = PageFilePhysics::get_reference()?;
         let static_data = PageFileStatic::get_reference()?;
 
-        *self = Self {
-            connected: graphics_data.status.data != 0,
-            static_data: StaticData::from(*static_data),
-            physics: Physics::from(*physics_data),
-            graphics: Graphics::from(*graphics_data),
-            current_lap: Lap::default(),
-            laps: Vec::new(),
-        };
+        self.static_data = StaticData::from(*static_data);
+        self.physics = Physics::from(*physics_data);
+        self.graphics = Graphics::from(*graphics_data);
 
         Ok(graphics_data.status.data != 0)
     }
@@ -87,7 +96,6 @@ impl Telemetry {
         let (mut p_changed, mut g_changed) = (false, false);
 
         if graphics_data.packet_id > self.graphics.packet_id {
-            self.connected = graphics_data.status.data != 0;
             self.graphics = Graphics::from(*graphics_data);
             g_changed = true;
         }
@@ -100,24 +108,46 @@ impl Telemetry {
         Ok((p_changed, g_changed))
     }
 
-    pub fn run(
-        &mut self,
-        state_tx: UnboundedSender<StateChange>,
-        setup_tx: UnboundedSender<SetupChange>,
-    ) {
+    pub fn send_connected(&mut self) {
+        if !self.connected {
+            self.state_tx
+                .unbounded_send(StateChange::ShmConnected(true))
+                .unwrap();
+
+            self.connected = true;
+        }
+    }
+
+    pub fn send_disconnected(&mut self) {
+        if self.connected {
+            self.state_tx
+                .unbounded_send(StateChange::ShmConnected(false))
+                .unwrap();
+
+            self.connected = false;
+        }
+    }
+
+    pub fn cleanup(&mut self) {
+        self.laps = Vec::new();
+        self.current_lap = Lap::default();
+    } 
+
+    pub fn run(&mut self) {
         debug!("started acc shm event loop");
         loop {
             {
+                // Connection loop loads Static Data as well as first Physics and Graphics
+                // Static Data is only loaded on connect, thus it is important to reenter this
+                // connection loop if the games goes into Status::Off as the map might change
+                // and we need to reload the static data.
                 match self.connect() {
                     Ok(connected) => {
                         if connected {
                             debug!("connected to acc");
 
-                            state_tx
-                                .unbounded_send(StateChange::ShmConnected(true))
-                                .unwrap();
-
-                            setup_tx
+                            self.send_connected();
+                            self.setup_tx
                                 .unbounded_send(SetupChange::Load((
                                     self.static_data.car_model.to_string(),
                                     self.static_data.track.to_string(),
@@ -125,24 +155,21 @@ impl Telemetry {
                                 .unwrap();
                         } else {
                             debug!("acc is offline, waiting for session");
-                            state_tx
-                                .unbounded_send(StateChange::ShmConnected(false))
-                                .unwrap();
                             std::thread::sleep(Duration::from_millis(500));
                             continue;
                         }
                     }
                     Err(e) => {
                         error!("failed to connect to shared memory: {:?}", e);
-                        state_tx
-                            .unbounded_send(StateChange::ShmConnected(false))
-                            .unwrap();
+                        self.send_disconnected();
                         std::thread::sleep(Duration::from_millis(500));
                         continue;
                     }
                 }
             }
 
+            // Game Telemetry Loop
+            // Refreshes Graphics and Physics page at a high rate to gather game telemetry
             loop {
                 match self.refresh() {
                     Ok((p_changed, g_changed)) => {
@@ -158,7 +185,7 @@ impl Telemetry {
                                 self.laps.push(self.current_lap.clone());
 
                                 debug!("finished lap: {:?}", self.graphics.completed_laps);
-                                state_tx
+                                self.state_tx
                                     .unbounded_send(StateChange::AvgTyrePressure(
                                         self.current_lap.avg_tyre_pressures(),
                                     ))
@@ -174,23 +201,20 @@ impl Telemetry {
                                 self.current_lap.h_graphics.push(self.graphics.clone());
                             }
                         } else if self.graphics.status == Status::Off {
-                            debug!("acc is offline, switching to connection loop");
-                            self.connected = false;
-                            state_tx
-                                .unbounded_send(StateChange::ShmConnected(false))
-                                .unwrap();
-                            std::thread::sleep(Duration::from_millis(500));
+                            if self.connected {
+                                debug!("acc is offline, switching to connection loop");
+                                self.send_disconnected();
+                                self.cleanup();
+                            }
+
                             break;
                         }
+
                         std::thread::sleep(Duration::from_millis(16));
                     }
                     Err(e) => {
                         error!("failed to retrive data: {:?}", e);
-                        self.connected = false;
-                        state_tx
-                            .unbounded_send(StateChange::ShmConnected(false))
-                            .unwrap();
-
+                        self.send_disconnected();
                         std::thread::sleep(Duration::from_millis(500));
                         break;
                     }
