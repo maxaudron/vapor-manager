@@ -1,9 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::{
-    setup::{Setup, SetupManager},
-    State, Weather,
-};
+use crate::setup::SetupManager;
 
 #[component]
 pub fn SetupManager() -> Element {
@@ -21,10 +18,10 @@ pub fn SetupManager() -> Element {
                 rsx! { div { class: "grid grid-cols-[1fr_min-content_1fr]",
                     div { class: "grid auto-rows-min",
                         { manager.setups.iter().map(|setup| { rsx! {
-                            SetupSmall { 
+                            SetupSmall {
                                 name: "{setup.name}",
-                                air_temp: setup.air_temperature, 
-                                track_temp: setup.road_temperature 
+                                air_temp: setup.air_temperature,
+                                track_temp: setup.road_temperature
                             }
                         }})}
                     }
@@ -34,10 +31,10 @@ pub fn SetupManager() -> Element {
                             span { class: "loading loading-ring loading-lg justify-self-center self-center" }
                         } else {{
                             manager.adj_setups.iter().map(|setup| { rsx! {
-                                SetupSmall { 
+                                SetupSmall {
                                     name: "{setup.name}",
-                                    air_temp: setup.air_temperature, 
-                                    track_temp: setup.road_temperature 
+                                    air_temp: setup.air_temperature,
+                                    track_temp: setup.road_temperature
                                 }
                             }})
                         }}
@@ -57,10 +54,10 @@ pub fn SetupManager() -> Element {
 #[component]
 pub fn SetupSmall(name: String, air_temp: u8, track_temp: u8) -> Element {
     rsx! {
-        div { class: "bg-base-300 rounded-md p-2",
+        div { class: "bg-surface0 rounded-md p-2",
             "{name}"
-            div { class: "badge bg-blue-100 text-black ml-4", "{air_temp}" }
-            div { class: "badge bg-gray-900 ml-2", "{track_temp}" }
+            div { class: "badge bg-sky text-black ml-4", "{air_temp} C" }
+            div { class: "badge bg-zinc-900 text-white ml-2", "{track_temp} C" }
         }
     }
 }
