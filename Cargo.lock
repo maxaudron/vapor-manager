@@ -4206,6 +4206,7 @@ name = "vapor-manager"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "futures-channel",
  "futures-util",
  "known-folders",
  "manganis",

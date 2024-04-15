@@ -89,8 +89,8 @@ impl Setup {
 
 impl Drop for Setup {
     fn drop(&mut self) {
-        println!("aaaa");
         if let Some(path) = self.template_path.as_ref() {
+            debug!("deleting setup {:?}", path);
             let _ = std::fs::remove_file(path);
         }
     }

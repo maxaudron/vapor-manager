@@ -1,15 +1,16 @@
-use dioxus::hooks::UnboundedSender;
-use std::{
-    io,
-    net::{Ipv4Addr, UdpSocket},
-    time::Duration,
-};
+use dioxus::hooks::{UnboundedReceiver, UnboundedSender};
+use futures_util::StreamExt;
+use std::{io, net::Ipv4Addr, sync::Arc, time::Duration};
+use tokio::net::UdpSocket;
 use tracing::{debug, error};
 
 use super::{
-    registration::{RegisterConnection, RegistrationResult}, BroadcastNetworkProtocolInbound, BroadcastNetworkProtocolOutbound, EntryList, InboundMessageTypes, RealtimeUpdate, RequestTrackData, TrackData
+    disconnect,
+    registration::{RegisterConnection, RegistrationResult},
+    BroadcastNetworkProtocolInbound, BroadcastNetworkProtocolOutbound, EntryList,
+    InboundMessageTypes, RealtimeUpdate, RequestTrackData, TrackData,
 };
-use crate::{ setup::SetupChange, StateChange, Weather};
+use crate::{setup::SetupChange, StateChange, Weather};
 
 pub struct BroadcastState {
     connection_id: i32,
@@ -18,12 +19,22 @@ pub struct BroadcastState {
     realtime_update: RealtimeUpdate,
     state_tx: UnboundedSender<StateChange>,
     setup_tx: UnboundedSender<SetupChange>,
+    socket: Option<Arc<UdpSocket>>,
+    broadcast_rx: UnboundedReceiver<BroadcastMsg>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BroadcastMsg {
+    Connect,
+    Disconnect,
+    Aborted,
 }
 
 impl BroadcastState {
     pub fn new(
         state_tx: UnboundedSender<StateChange>,
         setup_tx: UnboundedSender<SetupChange>,
+        broadcast_rx: UnboundedReceiver<BroadcastMsg>,
     ) -> BroadcastState {
         BroadcastState {
             connection_id: 0,
@@ -32,27 +43,32 @@ impl BroadcastState {
             realtime_update: Default::default(),
             state_tx,
             setup_tx,
+            socket: None,
+            broadcast_rx,
         }
     }
 
-    pub fn run(&mut self) {
-        loop {
-            match self.run_inner() {
-                Ok(()) => {}
-                Err(e) => {
-                    self.state_tx
-                        .unbounded_send(StateChange::BroadcastConnected(false))
-                        .unwrap();
-                    error!("failed to connect to udp: {:?}", e);
-                    std::thread::sleep(Duration::from_millis(1000))
-                }
+    pub async fn run(&mut self) {
+        debug!("starting acc broadcast api connection");
+        let state_tx = self.state_tx.clone();
+
+        match self.run_inner().await {
+            Ok(()) => (),
+            Err(e) => {
+                error!("failed to connect to udp: {:?}", e);
             }
         }
+
+        debug!("acc broadcast api connection has stopped");
+        state_tx
+            .unbounded_send(StateChange::BroadcastConnected(false))
+            .unwrap();
     }
 
-    pub fn run_inner(&mut self) -> io::Result<()> {
-        let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).unwrap();
-        socket.connect("127.0.0.1:9000").unwrap();
+    pub async fn run_inner(&mut self) -> io::Result<()> {
+        let socket = Arc::new(UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).await.unwrap());
+        self.socket = Some(socket.clone());
+        socket.connect("127.0.0.1:9000").await.unwrap();
 
         let request_connection = RegisterConnection {
             display_name: "Vapor Manager".to_string(),
@@ -61,71 +77,87 @@ impl BroadcastState {
             command_password: "".to_string(),
         };
 
-        socket.send(&request_connection.serialize())?;
+        socket.send(&request_connection.serialize()).await?;
 
         loop {
             let mut buf = [0; 2056];
-            let _amt = socket.recv(&mut buf)?;
 
-            let input = &buf[..];
-            let (input, msg_type) = InboundMessageTypes::read(input).unwrap();
-
-            match msg_type {
-                InboundMessageTypes::RegistrationResult => {
-                    let (_input, reg_res) = RegistrationResult::deserialize(input).unwrap();
-                    debug!("{:?}", reg_res);
-                    if !reg_res.connection_success {
-                        break;
+            tokio::select! {
+                msg = self.broadcast_rx.next() => {
+                    if let Some(msg) = msg {
+                        match msg {
+                            BroadcastMsg::Disconnect => {
+                                socket.send(&disconnect()).await?;
+                                return Ok(());
+                            }
+                            _ => (),
+                        }
                     }
-
-                    self.state_tx
-                        .unbounded_send(StateChange::BroadcastConnected(true))
-                        .unwrap();
-                    self.connection_id = reg_res.id;
-
-                    let req_track = RequestTrackData::new(self.connection_id).serialize();
-                    socket.send(&req_track)?;
                 }
-                InboundMessageTypes::RealtimeUpdate => {
-                    let (_input, update) = RealtimeUpdate::deserialize(input).unwrap();
-                    if self.realtime_update.ambient_temp != update.ambient_temp
-                        || self.realtime_update.track_temp != update.track_temp
-                        || self.realtime_update.clouds != update.clouds
-                        || self.realtime_update.rain_level != update.rain_level
-                        || self.realtime_update.wetness != update.wetness
-                    {
-                        let weather = Weather {
-                            ambient_temp: update.ambient_temp,
-                            track_temp: update.track_temp,
-                            clouds: update.clouds,
-                            rain_level: update.rain_level,
-                            wetness: update.wetness,
-                        };
+                amt = socket.recv(&mut buf) => {
+                    let _amt = amt?;
 
-                        self.state_tx
-                            .unbounded_send(StateChange::Weather(weather.clone()))
-                            .unwrap();
-                        self.setup_tx
-                            .unbounded_send(SetupChange::Weather(weather))
-                            .unwrap();
+                    let input = &buf[..];
+                    let (input, msg_type) = InboundMessageTypes::read(input).unwrap();
+
+                    match msg_type {
+                        InboundMessageTypes::RegistrationResult => {
+                            let (_input, reg_res) = RegistrationResult::deserialize(input).unwrap();
+                            debug!("{:?}", reg_res);
+                            if !reg_res.connection_success {
+                                break;
+                            }
+
+                            self.state_tx
+                                .unbounded_send(StateChange::BroadcastConnected(true))
+                                .unwrap();
+                            self.connection_id = reg_res.id;
+
+                            let req_track = RequestTrackData::new(self.connection_id).serialize();
+                            socket.send(&req_track).await?;
+                        }
+                        InboundMessageTypes::RealtimeUpdate => {
+                            let (_input, update) = RealtimeUpdate::deserialize(input).unwrap();
+                            if self.realtime_update.ambient_temp != update.ambient_temp
+                                || self.realtime_update.track_temp != update.track_temp
+                                || self.realtime_update.clouds != update.clouds
+                                || self.realtime_update.rain_level != update.rain_level
+                                || self.realtime_update.wetness != update.wetness
+                            {
+                                let weather = Weather {
+                                    ambient_temp: update.ambient_temp,
+                                    track_temp: update.track_temp,
+                                    clouds: update.clouds,
+                                    rain_level: update.rain_level,
+                                    wetness: update.wetness,
+                                };
+
+                                self.state_tx
+                                    .unbounded_send(StateChange::Weather(weather.clone()))
+                                    .unwrap();
+                                self.setup_tx
+                                    .unbounded_send(SetupChange::Weather(weather))
+                                    .unwrap();
+                            }
+
+                            self.realtime_update = update;
+                        }
+                        InboundMessageTypes::RealtimeCarUpdate => (),
+                        InboundMessageTypes::EntryList => (),
+                        InboundMessageTypes::EntryListCar => (),
+                        InboundMessageTypes::TrackData => {
+                            let (_input, track_data) = TrackData::deserialize(input).unwrap();
+                            debug!("{:?}", track_data);
+                            self.state_tx
+                                .unbounded_send(StateChange::TrackName(track_data.name.clone()))
+                                .unwrap();
+                            self.track_data = track_data;
+                        }
+                        InboundMessageTypes::BroadcastingEvent => (),
+                        InboundMessageTypes::ERROR => {
+                            error!("unknown message type received")
+                        }
                     }
-
-                    self.realtime_update = update;
-                }
-                InboundMessageTypes::RealtimeCarUpdate => (),
-                InboundMessageTypes::EntryList => (),
-                InboundMessageTypes::EntryListCar => (),
-                InboundMessageTypes::TrackData => {
-                    let (_input, track_data) = TrackData::deserialize(input).unwrap();
-                    debug!("{:?}", track_data);
-                    self.state_tx
-                        .unbounded_send(StateChange::TrackName(track_data.name.clone()))
-                        .unwrap();
-                    self.track_data = track_data;
-                }
-                InboundMessageTypes::BroadcastingEvent => (),
-                InboundMessageTypes::ERROR => {
-                    error!("unknown message type received")
                 }
             }
         }

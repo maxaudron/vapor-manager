@@ -9,6 +9,7 @@ edition = "2021"
 dioxus = { version = "0.5", features = ["desktop", "router"] }
 manganis = "0.2"
 futures-util = "0.3"
+futures-channel = "0.3"
 
 tracing = "0.1"
 tracing-subscriber = "0.3"
