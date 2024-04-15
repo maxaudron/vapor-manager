@@ -1,6 +1,14 @@
 use dioxus::prelude::*;
 
-use crate::{components::{setups::SetupManager, status_bar::StatusBar, theme::{Theme, ThemeSwitcher}, wheels::WheelPressures}, Route};
+use crate::{
+    components::{
+        setups::SetupManager,
+        status_bar::StatusBar,
+        theme::{Theme, ThemeSwitcher},
+        wheels::WheelPressures,
+    },
+    Route,
+};
 
 #[component]
 pub fn Base() -> Element {
@@ -38,17 +46,7 @@ pub fn Base() -> Element {
                                 "Settings"
                             }
                         }
-                        li {
-                            Link {
-                                class: if (route == Route::Debug {}) {
-                                    "btn btn-active-primary"
-                                } else {
-                                    "btn bg-base border-base"
-                                },
-                                to: Route::Debug {},
-                                "Debug"
-                            }
-                        }
+                        DebugLink { route }
                     }
                 }
                 div { class: "justify-self-end",
@@ -59,6 +57,27 @@ pub fn Base() -> Element {
             StatusBar {}
         }
     }
+}
+
+#[component]
+fn DebugLink(route: Route) -> Element {
+    #[cfg(debug_assertions)]
+    rsx! {
+        li {
+            Link {
+                class: if (route == Route::Debug {}) {
+                    "btn btn-active-primary"
+                } else {
+                    "btn bg-base border-base"
+                },
+                to: Route::Debug {},
+                "Debug"
+            }
+        }
+    }
+
+    #[cfg(not(debug_assertions))]
+    rsx! {  }
 }
 
 #[component]

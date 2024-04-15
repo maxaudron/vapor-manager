@@ -2,7 +2,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 #![allow(non_snake_case)]
 
-use dioxus::prelude::*;
+use dioxus::{
+    desktop::{tao::platform::windows::WindowBuilderExtWindows, Config, WindowBuilder},
+    prelude::*,
+};
 use futures_util::stream::StreamExt;
 
 use telemetry::{SessionType, Wheels};
@@ -62,6 +65,7 @@ enum Route {
         #[route("/settings")]
         Settings {},
         #[route("/debug")]
+        #[cfg(debug_assertions)]
         Debug {},
 }
 
@@ -72,7 +76,18 @@ fn main() {
 
     const _TAILWIND_URL: &str = manganis::mg!(file("public\\tailwind.css"));
 
-    dioxus::launch(App);
+    let config = Config::new().with_disable_context_menu(true);
+    #[cfg(not(debug_assertions))]
+    let config = config.with_menu(None);
+    LaunchBuilder::desktop()
+        .with_cfg(
+            config.with_window(
+                WindowBuilder::new()
+                    .with_resizable(true)
+                    .with_title("Vapor Manager"),
+            ),
+        )
+        .launch(App);
 }
 
 #[component]
