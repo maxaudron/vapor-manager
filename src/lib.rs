@@ -8,16 +8,21 @@ pub mod telemetry;
 // mod widgets;
 pub mod components;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum StateChange {
     AvgTyrePressure(Wheels<f32>),
     Weather(Weather),
     TrackName(String),
     SessionType(SessionType),
+    ShmConnected(bool),
+    BroadcastConnected(bool),
 }
 
 #[derive(Debug, Default, Clone)]
 pub struct State {
+    pub debug: bool,
+    pub shm_connected: bool,
+    pub broadcast_connected: bool,
     pub avg_tyre_pressures: Wheels<f32>,
     pub weather: Weather,
     pub track_name: String,

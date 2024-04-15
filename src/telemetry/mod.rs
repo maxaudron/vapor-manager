@@ -7,14 +7,12 @@ pub mod broadcast;
 use std::time::Duration;
 
 pub use data::*;
-use dioxus::
-    hooks::UnboundedSender
-;
+use dioxus::hooks::UnboundedSender;
 pub use shm::*;
 use thiserror::Error;
 use tracing::{debug, error};
 
-use crate::StateChange;
+use crate::{setup::SetupChange, StateChange};
 
 #[derive(Default, Debug, Clone)]
 pub struct Telemetry {
@@ -65,13 +63,10 @@ impl Telemetry {
         }
     }
 
-    pub fn connect(&mut self) -> Result<(), TelemetryError> {
+    pub fn connect(&mut self) -> Result<bool, TelemetryError> {
         let graphics_data = PageFileGraphics::get_reference()?;
         let physics_data = PageFilePhysics::get_reference()?;
         let static_data = PageFileStatic::get_reference()?;
-        debug!("got initial data: {:?}", static_data);
-        debug!("got initial data: {:?}", physics_data);
-        debug!("got initial data: {:?}", graphics_data);
 
         *self = Self {
             connected: graphics_data.status.data != 0,
@@ -82,7 +77,7 @@ impl Telemetry {
             laps: Vec::new(),
         };
 
-        Ok(())
+        Ok(graphics_data.status.data != 0)
     }
 
     pub fn refresh(&mut self) -> Result<(bool, bool), TelemetryError> {
@@ -92,14 +87,12 @@ impl Telemetry {
         let (mut p_changed, mut g_changed) = (false, false);
 
         if graphics_data.packet_id > self.graphics.packet_id {
-            // trace!("updated graphics data");
             self.connected = graphics_data.status.data != 0;
             self.graphics = Graphics::from(*graphics_data);
             g_changed = true;
         }
 
         if physics_data.packet_id > self.physics.packet_id {
-            // trace!("updated physics data");
             self.physics = Physics::from(*physics_data);
             p_changed = true;
         }
@@ -107,19 +100,43 @@ impl Telemetry {
         Ok((p_changed, g_changed))
     }
 
-    pub fn run(&mut self, tx: UnboundedSender<StateChange>) {
+    pub fn run(
+        &mut self,
+        state_tx: UnboundedSender<StateChange>,
+        setup_tx: UnboundedSender<SetupChange>,
+    ) {
         debug!("started acc shm event loop");
         loop {
             {
                 match self.connect() {
-                    Ok(_) => {
-                        debug!("connected to acc");
+                    Ok(connected) => {
+                        if connected {
+                            debug!("connected to acc");
 
-                        tx.unbounded_send(StateChange::TrackName(self.static_data.track.clone()))
-                            .unwrap();
+                            state_tx
+                                .unbounded_send(StateChange::ShmConnected(true))
+                                .unwrap();
+
+                            setup_tx
+                                .unbounded_send(SetupChange::Load((
+                                    self.static_data.car_model.to_string(),
+                                    self.static_data.track.to_string(),
+                                )))
+                                .unwrap();
+                        } else {
+                            debug!("acc is offline, waiting for session");
+                            state_tx
+                                .unbounded_send(StateChange::ShmConnected(false))
+                                .unwrap();
+                            std::thread::sleep(Duration::from_millis(500));
+                            continue;
+                        }
                     }
                     Err(e) => {
-                        error!("failed to connect to acc: {:?}", e);
+                        error!("failed to connect to shared memory: {:?}", e);
+                        state_tx
+                            .unbounded_send(StateChange::ShmConnected(false))
+                            .unwrap();
                         std::thread::sleep(Duration::from_millis(500));
                         continue;
                     }
@@ -136,14 +153,16 @@ impl Telemetry {
                                 .last()
                                 .unwrap_or(&Graphics::default())
                                 .completed_laps
-                                > self.graphics.completed_laps
+                                < self.graphics.completed_laps
                             {
                                 self.laps.push(self.current_lap.clone());
 
-                                tx.unbounded_send(StateChange::AvgTyrePressure(
-                                    self.current_lap.avg_tyre_pressures(),
-                                ))
-                                .unwrap();
+                                debug!("finished lap: {:?}", self.graphics.completed_laps);
+                                state_tx
+                                    .unbounded_send(StateChange::AvgTyrePressure(
+                                        self.current_lap.avg_tyre_pressures(),
+                                    ))
+                                    .unwrap();
                                 self.current_lap = Lap::default();
                             }
 
@@ -154,13 +173,23 @@ impl Telemetry {
                             if g_changed {
                                 self.current_lap.h_graphics.push(self.graphics.clone());
                             }
-                        } else {
-                            // debug!("state changed: {:?}", self.graphics.status)
+                        } else if self.graphics.status == Status::Off {
+                            debug!("acc is offline, switching to connection loop");
+                            self.connected = false;
+                            state_tx
+                                .unbounded_send(StateChange::ShmConnected(false))
+                                .unwrap();
+                            std::thread::sleep(Duration::from_millis(500));
+                            break;
                         }
+                        std::thread::sleep(Duration::from_millis(16));
                     }
                     Err(e) => {
                         error!("failed to retrive data: {:?}", e);
                         self.connected = false;
+                        state_tx
+                            .unbounded_send(StateChange::ShmConnected(false))
+                            .unwrap();
 
                         std::thread::sleep(Duration::from_millis(500));
                         break;
@@ -173,8 +202,8 @@ impl Telemetry {
 
 #[derive(Error, Debug)]
 pub enum TelemetryError {
-    #[error("failed to connect to acc")]
-    ConnectionFailed,
+    #[error("failed to connect to acc: {0}")]
+    ConnectionFailed(windows::core::Error),
     #[error("acc offline")]
     Offline,
 }

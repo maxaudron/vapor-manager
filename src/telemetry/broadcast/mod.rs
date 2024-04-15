@@ -5,12 +5,12 @@ use std::{
 };
 
 use dioxus::hooks::UnboundedSender;
-use tracing::{debug, error};
 use nom::{
     bytes::complete::take,
     number::complete::{le_u16, u8},
     IResult,
 };
+use tracing::{debug, error};
 
 mod broadcasting_event;
 mod data;
@@ -30,7 +30,7 @@ pub use realtime_car_update::*;
 pub use realtime_update::*;
 pub use track_data::*;
 
-use crate::{StateChange, Weather};
+use crate::{setup::SetupChange, StateChange, Weather};
 
 use self::registration::{RegisterConnection, RegistrationResult};
 
@@ -39,17 +39,22 @@ pub struct BroadcastState {
     _entry_list: EntryList,
     track_data: TrackData,
     realtime_update: RealtimeUpdate,
-    tx: UnboundedSender<StateChange>,
+    state_tx: UnboundedSender<StateChange>,
+    setup_tx: UnboundedSender<SetupChange>,
 }
 
 impl BroadcastState {
-    pub fn new(tx: UnboundedSender<StateChange>) -> BroadcastState {
+    pub fn new(
+        state_tx: UnboundedSender<StateChange>,
+        setup_tx: UnboundedSender<SetupChange>,
+    ) -> BroadcastState {
         BroadcastState {
             connection_id: 0,
             _entry_list: Default::default(),
             track_data: Default::default(),
             realtime_update: Default::default(),
-            tx,
+            state_tx,
+            setup_tx,
         }
     }
 
@@ -58,6 +63,9 @@ impl BroadcastState {
             match self.run_inner() {
                 Ok(()) => {}
                 Err(e) => {
+                    self.state_tx
+                        .unbounded_send(StateChange::BroadcastConnected(false))
+                        .unwrap();
                     error!("failed to connect to udp: {:?}", e);
                     std::thread::sleep(Duration::from_millis(1000))
                 }
@@ -93,6 +101,9 @@ impl BroadcastState {
                         break;
                     }
 
+                    self.state_tx
+                        .unbounded_send(StateChange::BroadcastConnected(true))
+                        .unwrap();
                     self.connection_id = reg_res.id;
 
                     let req_track = RequestTrackData::new(self.connection_id).serialize();
@@ -106,14 +117,19 @@ impl BroadcastState {
                         || self.realtime_update.rain_level != update.rain_level
                         || self.realtime_update.wetness != update.wetness
                     {
-                        self.tx
-                            .unbounded_send(StateChange::Weather(Weather {
-                                ambient_temp: update.ambient_temp,
-                                track_temp: update.track_temp,
-                                clouds: update.clouds,
-                                rain_level: update.rain_level,
-                                wetness: update.wetness,
-                            }))
+                        let weather = Weather {
+                            ambient_temp: update.ambient_temp,
+                            track_temp: update.track_temp,
+                            clouds: update.clouds,
+                            rain_level: update.rain_level,
+                            wetness: update.wetness,
+                        };
+
+                        self.state_tx
+                            .unbounded_send(StateChange::Weather(weather.clone()))
+                            .unwrap();
+                        self.setup_tx
+                            .unbounded_send(SetupChange::Weather(weather))
                             .unwrap();
                     }
 
@@ -125,7 +141,7 @@ impl BroadcastState {
                 InboundMessageTypes::TrackData => {
                     let (_input, track_data) = TrackData::deserialize(input).unwrap();
                     debug!("{:?}", track_data);
-                    self.tx
+                    self.state_tx
                         .unbounded_send(StateChange::TrackName(track_data.name.clone()))
                         .unwrap();
                     self.track_data = track_data;

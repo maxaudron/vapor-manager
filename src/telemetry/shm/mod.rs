@@ -35,7 +35,7 @@ pub trait SharedMemoryPage {
         let handle: HANDLE = unsafe {
             OpenFileMappingA(FILE_MAP_READ.0, false, PCSTR::from_raw(Self::NAME.as_ptr()))
         }
-        .map_err(|e| TelemetryError::ConnectionFailed)?;
+        .map_err(|e| TelemetryError::ConnectionFailed(e))?;
 
         let file_view: *const c_void =
             unsafe { MapViewOfFile(handle, FILE_MAP_READ, 0, 0, 0) }.Value;

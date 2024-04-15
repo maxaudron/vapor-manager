@@ -9,7 +9,7 @@ pub fn WheelPressures() -> Element {
     let wheels = telemetry.avg_tyre_pressures.clone();
 
     rsx! {
-        div { class: "bg-base-200 rounded-md shadow-lg p-4 grid auto-rows-min w-min h-min justify-items-center",
+        div { class: "bg-base rounded-md shadow-lg p-4 grid auto-rows-min w-min h-min justify-items-center",
             h1 { class: "text-xl text-nowrap pb-4", "Tyre Pressures" }
             div { class: "grid grid-cols-[repeat(4,_min-content)] gap-4",
                 Wheel { pressure: wheels.front_left, name: "FL" }
@@ -28,9 +28,14 @@ pub fn Wheel(pressure: f32, name: String) -> Element {
     let percent = (percent * 100.0).round() as i32;
     rsx! {
         div { class: "grid auto-rows-auto justify-items-center",
-            div { class: "pb-2", "{pressure:.1}" }
-            div { class: "h-40 w-4 rounded-full bg-base-300 shadow-sm", style: "position: relative;",
-                div { class: "rounded-full", style: "position: absolute; bottom: 0; width: 100%; height: {percent}%; background-color: hsl({color}, 80%, 50%)" }
+            div { class: "pb-2", "{pressure:03.1}" }
+            div {
+                class: "h-40 w-4 rounded-full bg-mantle shadow-sm",
+                style: "position: relative;",
+                div {
+                    class: "rounded-full",
+                    style: "position: absolute; bottom: 0; width: 100%; height: {percent}%; background-color: hsl({color}, 55%, 70%)"
+                }
             }
             div { class: "pt-2", "{name}" }
         }
