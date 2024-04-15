@@ -66,7 +66,7 @@ enum Route {
 }
 
 fn main() {
-    let collector = tracing_subscriber::fmt()
+    tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .init();
 
