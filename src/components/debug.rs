@@ -5,7 +5,7 @@ use crate::{setup::SetupManager, telemetry::Wheels, State, StateChange};
 #[component]
 pub fn Debug() -> Element {
     let mut state: Signal<State> = use_context();
-    let mut setup_manager: Signal<Option<SetupManager>> = use_context();
+    let _setup_manager: Signal<Option<SetupManager>> = use_context();
 
     let state_change = use_coroutine_handle::<StateChange>();
 

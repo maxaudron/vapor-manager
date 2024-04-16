@@ -3,15 +3,13 @@
 
 use std::ffi::c_void;
 
-use tracing::trace;
-
 use super::TelemetryError;
 
 #[cfg(windows)]
 use windows::{
     core::PCSTR,
     Win32::{
-        Foundation::{CloseHandle, HANDLE},
+        Foundation::HANDLE,
         System::Memory::{MapViewOfFile, OpenFileMappingA, FILE_MAP_READ},
     },
 };

@@ -1,6 +1,6 @@
 use dioxus::hooks::{UnboundedReceiver, UnboundedSender};
 use futures_util::StreamExt;
-use std::{io, net::Ipv4Addr, sync::Arc, time::Duration};
+use std::{io, net::Ipv4Addr, sync::Arc};
 use tokio::net::UdpSocket;
 use tracing::{debug, error};
 

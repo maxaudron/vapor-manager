@@ -14,8 +14,6 @@ use tracing::{debug, error};
 
 use crate::{setup::SetupChange, StateChange};
 
-use self::broadcast::BroadcastMsg;
-
 #[derive(Debug, Clone)]
 pub struct Telemetry {
     pub connected: bool,

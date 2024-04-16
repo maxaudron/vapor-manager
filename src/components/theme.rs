@@ -3,7 +3,6 @@ use std::str::FromStr;
 use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
-use tracing::debug;
 
 #[derive(
     Clone,
