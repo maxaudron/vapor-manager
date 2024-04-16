@@ -1,8 +1,8 @@
-#+title: ACC Tools
+# Vapor Manager
 
-Tools for ACC to do setups etc.
+Tool for managing setups and creating custom setups
 
-* Features
+## Features
 - Tire Pressure Avg
 - Fuel Calculator
 - Setup Adjust
@@ -11,3 +11,6 @@ Tools for ACC to do setups etc.
   - Automatic Q/R
 
 - ? Live MOTEC Telemetry ?
+
+## TODO
+- [ ] Timeout for Broadcast API in case of unexpected game closure

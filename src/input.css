@@ -10,3 +10,27 @@
     @apply bg-primary text-warning-content;
     filter: brightness(85%);
 }
+
+.input-number {
+    @apply input input-bordered;
+}
+
+.input-number[type=number]::-webkit-inner-spin-button,
+.input-number[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+.svg {
+    @apply fill-current inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.svg:hover {
+    @apply bg-crust/0;
+}
+
+.btn:has(> .svg):hover {
+    background-color: transparent;
+    @apply text-primary;
+}

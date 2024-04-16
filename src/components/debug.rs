@@ -20,7 +20,7 @@ pub fn Debug() -> Element {
     };
 
     rsx! {
-        div { class: "grid grid-rows-3 bg-base rounded-md shadow-lg p-4 m-2 grid auto-rows-min gap-4",
+        div { class: "grid grid-rows-3 bg-base rounded-md shadow-lg p-4 mx-2 gap-4",
             div { class: "grid grid-cols-3 gap-4",
                 label { class: "label cursor-pointer bg-surface0 rounded-md h-min px-2",
                     span { class: "label-text", "debug" }

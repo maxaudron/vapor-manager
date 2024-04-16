@@ -2,9 +2,7 @@ use dioxus::prelude::*;
 
 use crate::{
     components::{
-        setups::SetupManager,
-        status_bar::StatusBar,
-        theme::{Theme, ThemeSwitcher},
+        settings::Settings, setups::SetupManager, status_bar::StatusBar, theme::Theme,
         wheels::WheelPressures,
     },
     Route,
@@ -12,10 +10,13 @@ use crate::{
 
 #[component]
 pub fn Base() -> Element {
-    let theme = use_signal(|| Theme::Mocha);
     let route = use_route::<Route>();
 
+    let theme = use_context_provider(|| Signal::new(Theme::Mocha));
     let theme_lower = format!("{theme:?}").to_lowercase();
+
+    let _settings: Signal<Settings> =
+        use_context_provider(|| Signal::new(Settings::init(theme)));
 
     rsx! {
         div {
@@ -23,7 +24,7 @@ pub fn Base() -> Element {
             "data-theme": "{theme:?}",
             div { class: "grid grid-cols-2",
                 div { class: "justify-self-start",
-                    ul { class: "menu menu-horizontal rounded-box gap-2 bg-sla",
+                    ul { class: "menu menu-horizontal rounded-box gap-2",
                         li {
                             Link {
                                 class: if (route == Route::Home {}) {
@@ -35,6 +36,11 @@ pub fn Base() -> Element {
                                 "Home"
                             }
                         }
+                        DebugLink { route: route.clone() }
+                    }
+                }
+                div { class: "justify-self-end",
+                    ul { class: "menu menu-horizontal rounded-box gap-2",
                         li {
                             Link {
                                 class: if (route == Route::Settings {}) {
@@ -46,11 +52,7 @@ pub fn Base() -> Element {
                                 "Settings"
                             }
                         }
-                        DebugLink { route }
                     }
-                }
-                div { class: "justify-self-end",
-                    ThemeSwitcher { theme }
                 }
             }
             Outlet::<Route> {}
@@ -78,11 +80,6 @@ fn DebugLink(route: Route) -> Element {
 
     #[cfg(not(debug_assertions))]
     rsx! {  }
-}
-
-#[component]
-pub fn Settings() -> Element {
-    rsx! { "Blog post" }
 }
 
 #[component]

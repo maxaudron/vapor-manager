@@ -5,7 +5,7 @@
 use std::time::Duration;
 
 use dioxus::{
-    desktop::{tao::platform::windows::WindowBuilderExtWindows, Config, WindowBuilder},
+    desktop::{Config, WindowBuilder},
     prelude::*,
 };
 use futures_util::stream::StreamExt;
@@ -19,8 +19,9 @@ pub mod telemetry;
 pub mod components;
 
 use components::{
-    base::{Base, Home, Settings},
+    base::{Base, Home},
     debug::Debug,
+    settings::Settings,
 };
 use tracing::debug;
 
@@ -31,6 +32,8 @@ use crate::{
         Telemetry,
     },
 };
+
+pub static PROGRAM_NAME: &'static str = "Vapor Manager";
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum StateChange {
@@ -90,7 +93,7 @@ fn main() {
             config.with_window(
                 WindowBuilder::new()
                     .with_resizable(true)
-                    .with_title("Vapor Manager"),
+                    .with_title(PROGRAM_NAME),
             ),
         )
         .launch(App);
