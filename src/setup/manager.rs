@@ -3,15 +3,19 @@ use futures_util::StreamExt;
 use std::path::PathBuf;
 use tracing::{debug, error};
 
-use crate::Weather;
+use crate::{telemetry::Time, Weather, PROGRAM_NAME};
 
 use super::{Setup, SetupError};
 
 pub type Car = String;
 pub type Track = String;
+pub type FuelPerLap = f32;
+pub type BestLap = Time;
 
 pub enum SetupChange {
     Weather(Weather),
+    SessionLength(f32),
+    LapInfo((FuelPerLap, BestLap)),
     Load((Car, Track)),
 }
 
@@ -31,22 +35,24 @@ pub struct SetupManager {
 impl SetupManager {
     pub fn new(track: &str, car: &str) -> Self {
         #[cfg(windows)]
-        let mut documents =
+        let documents =
             known_folders::get_known_folder_path(known_folders::KnownFolder::Documents).unwrap();
         #[cfg(not(windows))]
-        let mut documents = PathBuf::from("./setups");
-
-        documents.push("Assetto Corsa Competizione");
+        let documents = PathBuf::from("./setups");
 
         let mut setup_folder = documents.clone();
+        setup_folder.push("Assetto Corsa Competizione");
         setup_folder.push("Setups");
         setup_folder.push(car);
         setup_folder.push(track);
 
         let mut template_setup_folder = documents;
+        template_setup_folder.push(PROGRAM_NAME);
         template_setup_folder.push("SetupTemplates");
         template_setup_folder.push(car);
         template_setup_folder.push(track);
+
+        std::fs::create_dir_all(&template_setup_folder).unwrap();
 
         Self {
             track: track.to_owned(),
@@ -60,7 +66,8 @@ impl SetupManager {
 
     pub fn discover(&mut self) -> Result<(), SetupError> {
         debug!("loading setups from: {:?}", self.template_setup_folder);
-        let setups = std::fs::read_dir(&self.template_setup_folder).map_err(|_| SetupError::NoSetups)?;
+        let setups =
+            std::fs::read_dir(&self.template_setup_folder).map_err(|_| SetupError::NoSetups)?;
 
         self.setups = setups
             .into_iter()
@@ -97,7 +104,9 @@ impl SetupManager {
                         manager.adjust_pressure(weather.ambient_temp, weather.track_temp);
                         manager.store()
                     } else {
-                        error!("got setup change weather message but setupmanager is not yet loaded");
+                        error!(
+                            "got setup change weather message but setupmanager is not yet loaded"
+                        );
                     }
                 }
                 SetupChange::Load((car, track)) => {
@@ -110,6 +119,10 @@ impl SetupManager {
                     }
 
                     *setup_manager.write() = Some(manager);
+                }
+                SetupChange::SessionLength(_) => todo!(),
+                SetupChange::LapInfo(lapinfo) => {
+                    debug!("updated lap info {lapinfo:?}")
                 }
             }
         }

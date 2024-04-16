@@ -36,6 +36,16 @@ pub struct Lap {
 }
 
 impl Lap {
+    pub fn last_point(&self) -> Option<(&Physics, &Graphics)> {
+        if self.h_physics.last().is_some() && self.h_graphics.last().is_some() {
+            Some((
+                self.h_physics.last().unwrap(),
+                self.h_graphics.last().unwrap(),
+            ))
+        } else {
+            None
+        }
+    }
     pub fn avg_tyre_pressures(&self) -> Wheels<f32> {
         let (fl, fr, rl, rr) = self
             .h_physics
@@ -131,7 +141,7 @@ impl Telemetry {
     pub fn cleanup(&mut self) {
         self.laps = Vec::new();
         self.current_lap = Lap::default();
-    } 
+    }
 
     pub fn run(&mut self) {
         debug!("started acc shm event loop");
@@ -174,23 +184,29 @@ impl Telemetry {
                 match self.refresh() {
                     Ok((p_changed, g_changed)) => {
                         if self.graphics.status == Status::Live {
-                            if self
-                                .current_lap
-                                .h_graphics
-                                .last()
-                                .unwrap_or(&Graphics::default())
-                                .completed_laps
-                                < self.graphics.completed_laps
-                            {
-                                self.laps.push(self.current_lap.clone());
+                            if let Some((_l_physics, l_graphics)) = self.current_lap.last_point() {
+                                if l_graphics.fuel_used_per_lap != self.graphics.fuel_used_per_lap
+                                    || l_graphics.lap_timing.best != self.graphics.lap_timing.best
+                                {
+                                    self.setup_tx
+                                        .unbounded_send(SetupChange::LapInfo((
+                                            self.graphics.fuel_used_per_lap,
+                                            self.graphics.lap_timing.best.clone(),
+                                        )))
+                                        .unwrap();
+                                }
 
-                                debug!("finished lap: {:?}", self.graphics.completed_laps);
-                                self.state_tx
-                                    .unbounded_send(StateChange::AvgTyrePressure(
-                                        self.current_lap.avg_tyre_pressures(),
-                                    ))
-                                    .unwrap();
-                                self.current_lap = Lap::default();
+                                if l_graphics.completed_laps < self.graphics.completed_laps {
+                                    self.laps.push(self.current_lap.clone());
+
+                                    debug!("finished lap: {:?}", self.graphics.completed_laps);
+                                    self.state_tx
+                                        .unbounded_send(StateChange::AvgTyrePressure(
+                                            self.current_lap.avg_tyre_pressures(),
+                                        ))
+                                        .unwrap();
+                                    self.current_lap = Lap::default();
+                                }
                             }
 
                             if p_changed {

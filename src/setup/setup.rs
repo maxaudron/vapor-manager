@@ -31,7 +31,7 @@ impl Setup {
         setup
     }
 
-    pub fn path(&self, path: &Path) -> PathBuf {
+    pub fn path_with_name(&self, path: &Path) -> PathBuf {
         let mut path = path.to_owned();
         path.push(format!("{}.json", self.name));
         path
@@ -42,7 +42,7 @@ impl Setup {
             std::fs::create_dir_all(path).unwrap();
         }
 
-        let path = self.path(path);
+        let path = self.path_with_name(path);
         debug!("saving setup to {:?}", path);
         self.template_path = Some(path.clone());
         let file = File::create(path).unwrap();
@@ -50,7 +50,7 @@ impl Setup {
     }
 
     pub fn delete(&self, path: &Path) {
-        let path = self.path(path);
+        let path = self.path_with_name(path);
         debug!("deleting setup: {:?}", path);
         std::fs::remove_file(path).unwrap();
     }
