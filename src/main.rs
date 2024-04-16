@@ -5,7 +5,7 @@
 use std::time::Duration;
 
 use dioxus::{
-    desktop::{Config, WindowBuilder},
+    desktop::{Config, LogicalSize, WindowBuilder},
     prelude::*,
 };
 use futures_util::stream::StreamExt;
@@ -26,6 +26,7 @@ use components::{
 use tracing::debug;
 
 use crate::{
+    components::theme::Theme,
     setup::{SetupChange, SetupManager},
     telemetry::{
         broadcast::{BroadcastMsg, BroadcastState},
@@ -88,11 +89,14 @@ fn main() {
     let config = Config::new().with_disable_context_menu(true);
     #[cfg(not(debug_assertions))]
     let config = config.with_menu(None);
+    let size = LogicalSize::new(1200, 600);
     LaunchBuilder::desktop()
         .with_cfg(
             config.with_window(
                 WindowBuilder::new()
                     .with_resizable(true)
+                    .with_inner_size(size)
+                    .with_min_inner_size(size)
                     .with_title(PROGRAM_NAME),
             ),
         )
@@ -101,10 +105,14 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    let setup_state: Signal<Option<SetupManager>> = use_context_provider(|| Signal::new(None));
+    let theme = use_context_provider(|| Signal::new(Theme::Mocha));
+    let settings: Signal<Settings> = use_context_provider(|| Signal::new(Settings::init(theme)));
+
+    let setup_state: Signal<SetupManager> =
+        use_context_provider(|| Signal::new(SetupManager::default()));
     let setup_manager: Coroutine<SetupChange> = use_coroutine(|rx| async move {
         to_owned![setup_state];
-        SetupManager::coroutine(rx, setup_state).await;
+        SetupManager::coroutine(rx, setup_state, settings).await;
     });
 
     let (broadcast_tx, mut broadcast_rx) = futures_channel::mpsc::unbounded();

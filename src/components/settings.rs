@@ -7,6 +7,7 @@ use tracing::{debug, error};
 
 use crate::{
     components::{input::InputNumber, theme::ThemeSwitcher},
+    setup::SetupChange,
     PROGRAM_NAME,
 };
 
@@ -14,8 +15,9 @@ use super::theme::Theme;
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Settings {
-    telemetry_laps: i32,
-    theme: Theme,
+    pub telemetry_laps: i32,
+    pub reserve_laps: i32,
+    pub theme: Theme,
 }
 
 impl Drop for Settings {
@@ -82,34 +84,51 @@ impl Settings {
 pub fn Settings() -> Element {
     let theme: Signal<Theme> = use_context();
     let mut settings: Signal<Settings> = use_context();
+    let setup_manager_tx = use_coroutine_handle::<SetupChange>();
 
     let telemetry_laps = use_signal(|| settings.read().telemetry_laps);
+    let reserve_laps = use_signal(|| settings.read().reserve_laps);
     use_effect(move || {
         if settings.read().telemetry_laps != telemetry_laps() {
             debug!("changed laps: {:?}", telemetry_laps);
             settings.write().telemetry_laps = telemetry_laps();
         }
-
+    });
+    use_effect(move || {
         if !theme.read().eq(&settings.read().theme) {
             debug!("use_effect setting theme: {:?}", theme);
             settings.write().theme = *theme.read()
         }
     });
+    use_effect(move || {
+        if settings.read().reserve_laps != reserve_laps() {
+            debug!("changed reserve laps: {:?}", reserve_laps);
+            setup_manager_tx.send(SetupChange::ReserveLaps(reserve_laps()));
+            settings.write().reserve_laps = reserve_laps();
+        }
+    });
 
     rsx! {
-        div { class: "grid grid-rows-3 bg-base rounded-md shadow-lg p-4 mx-2 gap-4",
-            div { class: "grid grid-rows-2",
-                h1 { class: "text-lg", "App" }
+        div { class: "grid auto-rows-min bg-base rounded-md shadow-lg p-4 mx-2 gap-4",
+            div { class: "grid auto-rows-min gap-2",
+                h1 { class: "text-xl", "App" }
                 div { class: "label bg-surface0 rounded-md h-min px-2 pr-4",
                     span { class: "text-lg pl-8 label-text text-nowrap", "Theme" }
                     ThemeSwitcher { theme }
                 }
             }
-            div { class: "grid grid-rows-2",
-                h1 { class: "text-lg", "Setups" }
+            div { class: "grid auto-rows-min gap-2",
+                h1 { class: "text-xl", "Setups" }
                 InputNumber::<i32> {
                     name: "Telemetry Laps",
                     value: telemetry_laps,
+                    min: 0,
+                    max: 99,
+                    step: 1
+                }
+                InputNumber::<i32> {
+                    name: "Fuel Reserve Laps",
+                    value: reserve_laps,
                     min: 0,
                     max: 99,
                     step: 1

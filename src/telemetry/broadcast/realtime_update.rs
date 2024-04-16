@@ -39,6 +39,12 @@ pub struct RealtimeUpdate {
     pub best_session_lap: LapInfo,
 }
 
+impl RealtimeUpdate {
+    pub fn session_length(&self) -> f32 {
+        self.session_end_time + self.session_time
+    }
+}
+
 impl BroadcastNetworkProtocolInbound for RealtimeUpdate {
     const TYPE: InboundMessageTypes = InboundMessageTypes::RealtimeUpdate;
 

@@ -3,8 +3,8 @@ use dioxus::prelude::*;
 use crate::setup::SetupManager;
 
 #[component]
-pub fn SetupManager() -> Element {
-    let setup_manager: Signal<Option<SetupManager>> = use_context();
+pub fn SetupView() -> Element {
+    let setup_manager: Signal<SetupManager> = use_context();
     let setup_manager = setup_manager.read();
 
     rsx! {
@@ -14,10 +14,10 @@ pub fn SetupManager() -> Element {
                 h1 { class: "text-xl pb-2 justify-self-center", "Setups" }
                 h1 { class: "text-md pb-2 pr-2 justify-self-end self-end", "Adjusted" }
             }
-            { if let Some(manager) = setup_manager.as_ref() {
+            { if !setup_manager.setups.is_empty() {
                 rsx! { div { class: "grid grid-cols-[1fr_min-content_1fr]",
                     div { class: "grid auto-rows-min",
-                        { manager.setups.iter().map(|setup| { rsx! {
+                        { setup_manager.setups.iter().map(|setup| { rsx! {
                             SetupSmall {
                                 name: "{setup.name}",
                                 air_temp: setup.air_temperature,
@@ -27,10 +27,10 @@ pub fn SetupManager() -> Element {
                     }
                     div { class: "divider divider-horizontal h-full mx-2" }
                     div { class: "grid auto-rows-min",
-                        if manager.adj_setups.is_empty() {
+                        if setup_manager.adj_setups.is_empty() {
                             span { class: "loading loading-ring loading-lg justify-self-center self-center" }
                         } else {{
-                            manager.adj_setups.iter().map(|setup| { rsx! {
+                            setup_manager.adj_setups.iter().map(|setup| { rsx! {
                                 SetupSmall {
                                     name: "{setup.name}",
                                     air_temp: setup.air_temperature,

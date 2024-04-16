@@ -1,9 +1,9 @@
 use dioxus::prelude::*;
 use futures_util::StreamExt;
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 use tracing::{debug, error};
 
-use crate::{telemetry::Time, Weather, PROGRAM_NAME};
+use crate::{components::settings::Settings, telemetry::Time, Weather, PROGRAM_NAME};
 
 use super::{Setup, SetupError};
 
@@ -14,15 +14,24 @@ pub type BestLap = Time;
 
 pub enum SetupChange {
     Weather(Weather),
-    SessionLength(f32),
+    SessionLength(Duration),
     LapInfo((FuelPerLap, BestLap)),
     Load((Car, Track)),
+    ReserveLaps(i32),
 }
 
 #[derive(Debug, Default, Clone)]
 pub struct SetupManager {
     pub track: Track,
     pub car: Car,
+
+    pub session_length: Duration,
+    pub fuel_per_lap: FuelPerLap,
+    pub best_lap: BestLap,
+    pub fuel: i32,
+    pub reserve_laps: i32,
+    pub reserve_fuel_l: f32,
+
     /// Setup Templates loaded from disk
     pub setups: Vec<Setup>,
     /// Setups adjusted for track temperature to be saved
@@ -57,10 +66,9 @@ impl SetupManager {
         Self {
             track: track.to_owned(),
             car: car.to_owned(),
-            setups: Vec::new(),
-            adj_setups: Vec::new(),
             setup_folder,
             template_setup_folder,
+            ..Default::default()
         }
     }
 
@@ -76,6 +84,10 @@ impl SetupManager {
             .map(|f| Setup::load(&f.path()))
             .collect();
 
+        if let Some(setup) = self.setups.first() {
+            self.fuel_per_lap = setup.basic_setup.strategy.fuel_per_lap
+        }
+
         Ok(())
     }
 
@@ -86,6 +98,21 @@ impl SetupManager {
         self.adj_setups = new;
     }
 
+    pub fn calculate_fuel(&mut self) {
+        if !self.session_length.is_zero() && self.best_lap.millis != 0 && self.fuel_per_lap != 0.0 {
+            let laps = self.session_length.as_millis() / self.best_lap.millis as u128;
+            debug!(
+                "calculating fuel: {:?} time {:?} l {:?} laps, reserve laps: {:?}",
+                self.session_length, self.best_lap.millis, laps, self.reserve_laps
+            );
+            let fuel = (((laps + self.reserve_laps as u128) as f32 * self.fuel_per_lap) * 1.1)
+                .round() as i32;
+            self.fuel = fuel;
+
+            self.reserve_fuel_l = self.reserve_laps as f32 * self.fuel_per_lap
+        }
+    }
+
     pub fn store(&mut self) {
         self.adj_setups
             .iter_mut()
@@ -94,20 +121,16 @@ impl SetupManager {
 
     pub async fn coroutine(
         mut rx: UnboundedReceiver<SetupChange>,
-        mut setup_manager: Signal<Option<SetupManager>>,
+        mut setup_manager: Signal<SetupManager>,
+        settings: Signal<Settings>,
     ) {
         while let Some(msg) = rx.next().await {
             match msg {
                 SetupChange::Weather(weather) => {
+                    debug!("got weather {weather:?}");
                     let mut manager = setup_manager.write();
-                    if let Some(manager) = manager.as_mut() {
-                        manager.adjust_pressure(weather.ambient_temp, weather.track_temp);
-                        manager.store()
-                    } else {
-                        error!(
-                            "got setup change weather message but setupmanager is not yet loaded"
-                        );
-                    }
+                    manager.adjust_pressure(weather.ambient_temp, weather.track_temp);
+                    manager.store()
                 }
                 SetupChange::Load((car, track)) => {
                     let mut manager = SetupManager::new(&track, &car);
@@ -118,11 +141,32 @@ impl SetupManager {
                         }
                     }
 
-                    *setup_manager.write() = Some(manager);
+                    debug!(
+                        "got initial reserve laps: {:?}",
+                        settings.read().reserve_laps
+                    );
+                    manager.reserve_laps = settings.read().reserve_laps;
+
+                    setup_manager.set(manager);
                 }
-                SetupChange::SessionLength(_) => todo!(),
-                SetupChange::LapInfo(lapinfo) => {
-                    debug!("updated lap info {lapinfo:?}")
+                SetupChange::SessionLength(duration) => {
+                    debug!("got session length {duration:?}");
+                    let mut manager = setup_manager.write();
+                    manager.session_length = duration;
+                    manager.calculate_fuel()
+                }
+                SetupChange::LapInfo((fuel_per_lap, best_lap)) => {
+                    debug!("got fuel_per_lap {fuel_per_lap} and best_lap: {best_lap:?}");
+                    let mut manager = setup_manager.write();
+                    manager.best_lap = best_lap;
+                    manager.fuel_per_lap = fuel_per_lap;
+                    manager.calculate_fuel()
+                }
+                SetupChange::ReserveLaps(laps) => {
+                    debug!("got reserve laps: {laps}");
+                    let mut manager = setup_manager.write();
+                    manager.reserve_laps = laps;
+                    manager.calculate_fuel()
                 }
             }
         }

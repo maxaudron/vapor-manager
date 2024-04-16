@@ -4,8 +4,8 @@ use thiserror::Error;
 mod test;
 
 mod data;
-mod setup;
 mod manager;
+mod setup;
 
 pub use data::*;
 pub use manager::*;

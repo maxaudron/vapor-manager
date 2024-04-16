@@ -20,6 +20,11 @@
     -webkit-appearance: none;
 }
 
+.input-nospinner[type=number]::-webkit-inner-spin-button,
+.input-nospinner[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
 .svg {
     @apply fill-current inline-block;
     width: 1.5rem;

@@ -85,6 +85,10 @@ impl Setup {
                     .for_each(|i| *i += -diff as i32)
             })
     }
+
+    pub fn set_fuel(&mut self, fuel: i32) {
+        self.basic_setup.strategy.fuel = fuel
+    }
 }
 
 impl Drop for Setup {

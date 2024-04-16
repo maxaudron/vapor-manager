@@ -161,6 +161,18 @@ impl Telemetry {
                                     self.static_data.track.to_string(),
                                 )))
                                 .unwrap();
+
+                            let best_time = if self.graphics.lap_timing.best.millis == i32::MAX {
+                                Time::default()
+                            } else {
+                                self.graphics.lap_timing.best.clone()
+                            };
+                            self.setup_tx
+                                .unbounded_send(SetupChange::LapInfo((
+                                    self.graphics.fuel_used_per_lap,
+                                    best_time,
+                                )))
+                                .unwrap();
                         } else {
                             debug!("acc is offline, waiting for session");
                             std::thread::sleep(Duration::from_millis(500));

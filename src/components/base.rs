@@ -2,8 +2,8 @@ use dioxus::prelude::*;
 
 use crate::{
     components::{
-        settings::Settings, setups::SetupManager, status_bar::StatusBar, theme::Theme,
-        wheels::WheelPressures,
+        fuel_calculator::FuelCalculator, setups::SetupView,
+        status_bar::StatusBar, theme::Theme, wheels::WheelPressures,
     },
     Route,
 };
@@ -12,11 +12,8 @@ use crate::{
 pub fn Base() -> Element {
     let route = use_route::<Route>();
 
-    let theme = use_context_provider(|| Signal::new(Theme::Mocha));
+    let theme = use_context::<Signal<Theme>>();
     let theme_lower = format!("{theme:?}").to_lowercase();
-
-    let _settings: Signal<Settings> =
-        use_context_provider(|| Signal::new(Settings::init(theme)));
 
     rsx! {
         div {
@@ -79,16 +76,17 @@ fn DebugLink(route: Route) -> Element {
     }
 
     #[cfg(not(debug_assertions))]
-    rsx! {  }
+    rsx! {}
 }
 
 #[component]
 pub fn Home() -> Element {
     rsx! {
         div { class: "grid grid-rows-[min-content_auto] gap-2 px-2",
-            div { class: "grid grid-cols-[min-content_auto] gap-2 h-min",
+            div { class: "grid grid-cols-[min-content_auto_min-content] gap-2 h-min",
                 WheelPressures {}
-                SetupManager {}
+                SetupView {}
+                FuelCalculator {}
             }
             div { class: "bg-base rounded-lg shadow-lg h-auto", "aaaa" }
         }

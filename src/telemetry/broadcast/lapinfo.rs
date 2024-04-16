@@ -107,11 +107,11 @@ fn test_lapinfo_deserialize() {
     let lapinfo = LapInfo {
         lap_type: LapType::Regular,
         laptime: None,
-        car_index: 0,                  
-        driver_index: 0,               
+        car_index: 0,
+        driver_index: 0,
         splits: vec![None, None, None],
-        invalid: false,                
-        valid_for_best: true,          
+        invalid: false,
+        valid_for_best: true,
     };
 
     let (_input, parsed) = read_lap(&input).unwrap();

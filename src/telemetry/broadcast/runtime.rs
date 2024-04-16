@@ -140,6 +140,15 @@ impl BroadcastState {
                                     .unwrap();
                             }
 
+                            if self.realtime_update.session_length() != update.session_length() {
+                                debug!("session time: {:?}", update.session_length());
+                                self.setup_tx
+                                    .unbounded_send(SetupChange::SessionLength(
+                                        std::time::Duration::from_millis(update.session_length().round() as u64),
+                                    ))
+                                    .unwrap();
+                            }
+
                             self.realtime_update = update;
                         }
                         InboundMessageTypes::RealtimeCarUpdate => (),
