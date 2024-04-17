@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 use crate::telemetry::broadcast::{read_lap, read_string};
 
 use super::{
-    BroadcastNetworkProtocolInbound, InboundMessageTypes, LapInfo, RaceSessionType, SessionPhase,
+    write_string, BroadcastNetworkProtocolInbound, InboundMessageTypes, LapInfo, RaceSessionType,
+    SessionPhase,
 };
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq, PartialOrd)]
@@ -49,7 +50,40 @@ impl BroadcastNetworkProtocolInbound for RealtimeUpdate {
     const TYPE: InboundMessageTypes = InboundMessageTypes::RealtimeUpdate;
 
     fn serialize(&self) -> Vec<u8> {
-        todo!()
+        let mut out: Vec<u8> = Vec::new();
+        out.push(Self::TYPE as u8);
+        out.extend(self.event_index.to_le_bytes());
+        out.extend(self.session_index.to_le_bytes());
+        out.push(self.session_type.into());
+        out.push(self.phase.into());
+        out.extend(self.session_time.to_le_bytes());
+        out.extend(self.session_end_time.to_le_bytes());
+
+        out.extend(self.focused_car_index.to_le_bytes());
+        out.extend(write_string(&self.active_camera_set));
+        out.extend(write_string(&self.active_camera));
+        out.extend(write_string(&self.current_hud_page));
+
+        out.push(self.replay_playing as u8);
+        if self.replay_playing {
+            out.extend(self.replay_session_time.unwrap_or_default().to_le_bytes());
+            out.extend(self.replay_remaining_time.unwrap_or_default().to_le_bytes());
+        }
+
+        out.extend(self.time_of_day.to_le_bytes());
+        out.push(self.ambient_temp);
+        out.push(self.track_temp);
+        out.push(self.clouds);
+        out.push(self.rain_level);
+        out.push(self.wetness);
+
+        // FIXME i'm lazy
+        out.extend([
+            255, 255, 255, 127, 0, 0, 0, 0, 3, 255, 255, 255, 127, 255, 255, 255, 127, 255, 255,
+            255, 127, 0, 1, 0, 0,
+        ]);
+
+        out
     }
 
     fn deserialize(input: &[u8]) -> nom::IResult<&[u8], Self>

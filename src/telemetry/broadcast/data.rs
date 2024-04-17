@@ -1,5 +1,6 @@
 use num_enum::{FromPrimitive, IntoPrimitive};
 use serde::{Deserialize, Serialize};
+use strum::{Display, EnumIter, EnumString};
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, IntoPrimitive, FromPrimitive)]
@@ -29,12 +30,15 @@ pub enum CarLocation {
     Clone,
     Copy,
     Debug,
+    Display,
     Serialize,
     Deserialize,
     IntoPrimitive,
     FromPrimitive,
     PartialEq,
     PartialOrd,
+    EnumString,
+    EnumIter
 )]
 pub enum SessionPhase {
     #[default]
@@ -55,12 +59,15 @@ pub enum SessionPhase {
     Clone,
     Copy,
     Debug,
+    Display,
     Serialize,
     Deserialize,
     IntoPrimitive,
     FromPrimitive,
     PartialEq,
     PartialOrd,
+    EnumString,
+    EnumIter
 )]
 pub enum RaceSessionType {
     #[default]

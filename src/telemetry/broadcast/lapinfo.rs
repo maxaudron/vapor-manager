@@ -101,7 +101,7 @@ impl LapType {
 fn test_lapinfo_deserialize() {
     let input = [
         255, 255, 255, 127, 0, 0, 0, 0, 3, 255, 255, 255, 127, 255, 255, 255, 127, 255, 255, 255,
-        127, 0, 1, 0, 0, 0, 0, 0, 0,
+        127, 0, 1, 0, 0,
     ];
 
     let lapinfo = LapInfo {

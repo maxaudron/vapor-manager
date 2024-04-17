@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::telemetry::broadcast::read_string;
 
-use super::{BroadcastNetworkProtocolInbound, InboundMessageTypes};
+use super::{write_string, BroadcastNetworkProtocolInbound, InboundMessageTypes};
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct TrackData {
@@ -23,7 +23,28 @@ impl BroadcastNetworkProtocolInbound for TrackData {
     const TYPE: InboundMessageTypes = InboundMessageTypes::TrackData;
 
     fn serialize(&self) -> Vec<u8> {
-        todo!()
+        let mut out: Vec<u8> = Vec::new();
+        out.push(Self::TYPE as u8);
+        out.extend(0i32.to_le_bytes()); // Connection ID
+        out.extend(write_string(&self.name));
+        out.extend(self.id.to_le_bytes());
+        out.extend(self.meters.to_le_bytes());
+
+        out.push(self.camera_sets.len() as u8);
+        for (name, sets) in &self.camera_sets {
+            out.extend(write_string(&name));
+            out.push(sets.len() as u8);
+            for cam in sets {
+                out.extend(write_string(&cam));
+            }
+        }
+
+        out.push(self.hud_pages.len() as u8);
+        for page in &self.hud_pages {
+            out.extend(write_string(&page))
+        }
+
+        out
     }
 
     fn deserialize(input: &[u8]) -> nom::IResult<&[u8], Self>

@@ -111,6 +111,7 @@ fn App() -> Element {
     let theme = use_context_provider(|| Signal::new(Theme::Mocha));
     let settings: Signal<Settings> = use_context_provider(|| Signal::new(Settings::init(theme)));
 
+    #[cfg(not(windows))]
     #[cfg(debug_assertions)]
     let _broadcast_debugger = use_coroutine(|rx| async move {
         telemetry::broadcast::BroadcastDebugger::coroutine(rx).await;
@@ -216,7 +217,5 @@ fn App() -> Element {
         }
     });
 
-    rsx! {
-        Router::<Route> {}
-    }
+    rsx! { Router::<Route> {} }
 }
