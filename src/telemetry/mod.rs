@@ -162,16 +162,10 @@ impl Telemetry {
                                 )))
                                 .unwrap();
 
-                            let best_time = if self.graphics.lap_timing.best.millis == i32::MAX {
-                                Time::default()
-                            } else {
-                                self.graphics.lap_timing.best.clone()
-                            };
                             self.setup_tx
-                                .unbounded_send(SetupChange::LapInfo((
+                                .unbounded_send(SetupChange::FuelPerLap(
                                     self.graphics.fuel_used_per_lap,
-                                    best_time,
-                                )))
+                                ))
                                 .unwrap();
                         } else {
                             debug!("acc is offline, waiting for session");
@@ -195,19 +189,27 @@ impl Telemetry {
                     Ok((p_changed, g_changed)) => {
                         if self.graphics.status == Status::Live {
                             if let Some((_l_physics, l_graphics)) = self.current_lap.last_point() {
-                                if l_graphics.fuel_used_per_lap != self.graphics.fuel_used_per_lap
-                                    || l_graphics.lap_timing.best != self.graphics.lap_timing.best
+                                if l_graphics.lap_timing.best != self.graphics.lap_timing.best
                                 {
                                     self.setup_tx
-                                        .unbounded_send(SetupChange::LapInfo((
-                                            self.graphics.fuel_used_per_lap,
+                                        .unbounded_send(SetupChange::BestLap(
                                             self.graphics.lap_timing.best.clone(),
-                                        )))
+                                        ))
+                                        .unwrap();
+                                }
+                                
+                                if l_graphics.fuel_used_per_lap != self.graphics.fuel_used_per_lap
+                                {
+                                    self.setup_tx
+                                        .unbounded_send(SetupChange::FuelPerLap(
+                                            self.graphics.fuel_used_per_lap,
+                                        ))
                                         .unwrap();
                                 }
 
                                 if l_graphics.completed_laps < self.graphics.completed_laps {
-                                    self.laps.push(self.current_lap.clone());
+                                    // For future development with more detailed metrics
+                                    // self.laps.push(self.current_lap.clone());
 
                                     debug!("finished lap: {:?}", self.graphics.completed_laps);
                                     self.state_tx

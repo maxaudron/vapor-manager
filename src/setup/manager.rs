@@ -15,7 +15,8 @@ pub type BestLap = Time;
 pub enum SetupChange {
     Weather(Weather),
     SessionLength(Duration),
-    LapInfo((FuelPerLap, BestLap)),
+    FuelPerLap(FuelPerLap),
+    BestLap(BestLap),
     Load((Car, Track)),
     ReserveLaps(i32),
 }
@@ -108,9 +109,11 @@ impl SetupManager {
             let fuel = (((laps + self.reserve_laps as u128) as f32 * self.fuel_per_lap) * 1.1)
                 .round() as i32;
             self.fuel = fuel;
-
-            self.reserve_fuel_l = self.reserve_laps as f32 * self.fuel_per_lap
         }
+    }
+
+    pub fn calculate_reserve_fuel(&mut self) {
+        self.reserve_fuel_l = self.reserve_laps as f32 * self.fuel_per_lap
     }
 
     pub fn store(&mut self) {
@@ -155,18 +158,26 @@ impl SetupManager {
                     manager.session_length = duration;
                     manager.calculate_fuel()
                 }
-                SetupChange::LapInfo((fuel_per_lap, best_lap)) => {
-                    debug!("got fuel_per_lap {fuel_per_lap} and best_lap: {best_lap:?}");
+                SetupChange::FuelPerLap(fuel_per_lap) => {
+                    debug!("got fuel_per_lap {fuel_per_lap}");
+                    let mut manager = setup_manager.write();
+                    manager.fuel_per_lap = fuel_per_lap;
+                    manager.calculate_fuel();
+                    manager.calculate_reserve_fuel();
+                }
+                SetupChange::BestLap(best_lap) => {
+                    debug!("got best_lap: {best_lap:?}");
                     let mut manager = setup_manager.write();
                     manager.best_lap = best_lap;
-                    manager.fuel_per_lap = fuel_per_lap;
-                    manager.calculate_fuel()
+                    manager.calculate_fuel();
+                    manager.calculate_reserve_fuel();
                 }
                 SetupChange::ReserveLaps(laps) => {
                     debug!("got reserve laps: {laps}");
                     let mut manager = setup_manager.write();
                     manager.reserve_laps = laps;
-                    manager.calculate_fuel()
+                    manager.calculate_fuel();
+                    manager.calculate_reserve_fuel();
                 }
             }
         }
