@@ -38,8 +38,8 @@ impl BroadcastNetworkProtocolOutbound for RegisterConnection {
     fn deserialize(input: &[u8]) -> IResult<&[u8], Self> {
         let (
             input,
-            (display_name, connection_password, ms_realtime_update_interval, command_password),
-        ) = tuple((read_string, read_string, le_i32, read_string))(input)?;
+            (_protocol_version, display_name, connection_password, ms_realtime_update_interval, command_password),
+        ) = tuple((u8, read_string, read_string, le_i32, read_string))(input)?;
 
         Ok((
             input,

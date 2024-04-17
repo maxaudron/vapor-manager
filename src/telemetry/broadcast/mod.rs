@@ -6,6 +6,10 @@ use nom::{
 
 mod runtime;
 pub use runtime::*;
+#[cfg(debug_assertions)]
+mod debugger;
+#[cfg(debug_assertions)]
+pub use debugger::*;
 
 mod broadcasting_event;
 mod data;
@@ -25,8 +29,20 @@ pub use realtime_car_update::*;
 pub use realtime_update::*;
 pub use track_data::*;
 
+use self::registration::RegistrationResult;
+
+pub enum BroadcastInboundMessage {
+    RegistrationResult(RegistrationResult),
+    RealtimeUpdate(RealtimeUpdate),
+    RealtimeCarUpdate(RealtimeCarUpdate),
+    EntryList(EntryList),
+    EntryListCar(CarInfo),
+    TrackData(TrackData),
+    BroadcastingEvent(BroadcastingEvent),
+}
+
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize, FromPrimitive)]
 pub enum OutboundMessageTypes {
     RegisterCommandApplication = 1,
     UnregisterCommandApplication = 9,
@@ -40,6 +56,16 @@ pub enum OutboundMessageTypes {
 
     PlayManualReplayHighlight = 52, // TODO, but planned
     SaveManualReplayHighlight = 60, // TODO, but planned: saving manual replays gives distributed clients the possibility to see the play the same replay
+
+    #[default]
+    Error = 0,
+}
+
+impl OutboundMessageTypes {
+    fn read(input: &[u8]) -> IResult<&[u8], Self> {
+        let (input, msg_type) = u8(input)?;
+        Ok((input, Self::from_primitive(msg_type)))
+    }
 }
 
 #[repr(u8)]
@@ -100,6 +126,7 @@ pub fn write_string(input: &str) -> Vec<u8> {
     vec
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct RequestEntryList {
     connection_id: i32,
 }
@@ -129,6 +156,7 @@ impl BroadcastNetworkProtocolOutbound for RequestEntryList {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct RequestTrackData {
     connection_id: i32,
 }
