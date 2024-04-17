@@ -35,7 +35,7 @@ pub fn FuelCalculator() -> Element {
                     input {
                         r#type: "number",
                         // 4rem
-                        class: "input input-bordered input-nospinner w-32 pr-[4rem] h-9",
+                        class: "input input-bordered input-nospinner w-[6.5rem] pr-[3rem] pl-3 h-9",
                         min: "0",
                         max: "{u64::MAX}",
                         step: "1",
@@ -51,7 +51,7 @@ pub fn FuelCalculator() -> Element {
                             }
                         }
                     }
-                    span { class: "ml-[-3rem] mr-[1.3rem]", "mins" }
+                    span { class: "ml-[-4.8rem] mr-[0.8rem]", "mins" }
                 }
                 ul { class: "menu menu-horizontal rounded-box gap-2 w-max pt-0",
                     li {

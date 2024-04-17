@@ -83,7 +83,7 @@ fn DebugLink(route: Route) -> Element {
 pub fn Home() -> Element {
     rsx! {
         div { class: "grid grid-rows-[min-content_auto] gap-2 px-2",
-            div { class: "grid grid-cols-[min-content_auto_min-content] gap-2 h-min",
+            div { class: "grid grid-cols-[max-content_auto_max-content] gap-2 h-min",
                 WheelPressures {}
                 SetupView {}
                 FuelCalculator {}
