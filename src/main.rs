@@ -84,7 +84,10 @@ fn main() {
         .with_max_level(tracing::Level::DEBUG)
         .init();
 
+    #[cfg(windows)]
     const _TAILWIND_URL: &str = manganis::mg!(file("public\\tailwind.css"));
+    #[cfg(not(windows))]
+    const _TAILWIND_URL: &str = manganis::mg!(file("public/tailwind.css"));
 
     let config = Config::new().with_disable_context_menu(true);
     #[cfg(not(debug_assertions))]

@@ -252,6 +252,7 @@ impl Telemetry {
 
 #[derive(Error, Debug)]
 pub enum TelemetryError {
+    #[cfg(windows)]
     #[error("failed to connect to acc: {0}")]
     ConnectionFailed(windows::core::Error),
     #[error("acc offline")]
