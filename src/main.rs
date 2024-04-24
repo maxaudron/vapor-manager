@@ -10,7 +10,7 @@ use dioxus::{
 };
 use futures_util::stream::StreamExt;
 
-use telemetry::{SessionType, Wheels};
+use telemetry::{Lap, SessionType, Wheels};
 
 pub mod setup;
 pub mod telemetry;
@@ -44,6 +44,7 @@ pub enum StateChange {
     SessionType(SessionType),
     ShmConnected(bool),
     BroadcastConnected(bool),
+    Lap(Lap),
 }
 
 #[derive(Debug, Default, Clone)]
@@ -55,6 +56,7 @@ pub struct State {
     pub weather: Weather,
     pub track_name: String,
     pub session_type: SessionType,
+    pub laps: Vec<Lap>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -154,6 +156,9 @@ fn App() -> Element {
                         state.write().broadcast_connected = connected;
                         broadcast_tx.unbounded_send(BroadcastMsg::Aborted).unwrap();
                     }
+                }
+                StateChange::Lap(lap) => {
+                    state.write().laps.push(lap)
                 }
             }
         }

@@ -96,6 +96,35 @@ pub struct Wheels<T> {
     pub rear_right: T,
 }
 
+impl<T> From<(T, T, T, T)> for Wheels<T> {
+    fn from(value: (T, T, T, T)) -> Self {
+        Wheels {
+            front_left: value.0,
+            front_right: value.1,
+            rear_left: value.2,
+            rear_right: value.3,
+        }
+    }
+}
+
+impl<T> Copy for Wheels<T> where T: Copy {}
+
+impl<T> std::ops::Div for Wheels<T>
+where
+    T: std::ops::Div<Output = T>,
+{
+    type Output = Wheels<T>;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        Wheels {
+            front_left: self.front_left / rhs.front_left,
+            front_right: self.front_right / rhs.front_right,
+            rear_left: self.rear_left / rhs.rear_left,
+            rear_right: self.rear_right / rhs.rear_right,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Vector3<T> {
     pub x: T,

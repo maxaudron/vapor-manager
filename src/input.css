@@ -39,3 +39,13 @@
     background-color: transparent;
     @apply text-primary;
 }
+
+.scrollable {
+    @apply overflow-auto;
+}
+
+.scrollable::-webkit-scrollbar {
+    width: 0.1rem;
+    height: 5rem;
+    background-color: var(--ctp-overlay0);
+}

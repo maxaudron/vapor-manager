@@ -2,8 +2,7 @@ use dioxus::prelude::*;
 
 use crate::{
     components::{
-        fuel_calculator::FuelCalculator, setups::SetupView,
-        status_bar::StatusBar, theme::Theme, wheels::WheelPressures,
+        fuel_calculator::FuelCalculator, laps::Laps, setups::SetupView, status_bar::StatusBar, theme::Theme, wheels::WheelPressures
     },
     Route,
 };
@@ -88,7 +87,7 @@ pub fn Home() -> Element {
                 SetupView {}
                 FuelCalculator {}
             }
-            div { class: "bg-base rounded-lg shadow-lg h-auto", "aaaa" }
+            Laps {}
         }
     }
 }

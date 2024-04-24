@@ -1,10 +1,12 @@
 mod conversion;
 mod data;
+mod laphistory;
+pub use laphistory::*;
 pub mod shm;
 
 pub mod broadcast;
 
-use std::time::Duration;
+use std::{fmt::Display, time::Duration};
 
 pub use data::*;
 use dioxus::hooks::UnboundedSender;
@@ -20,52 +22,42 @@ pub struct Telemetry {
     pub static_data: StaticData,
     pub physics: Physics,
     pub graphics: Graphics,
-    pub current_lap: Lap,
+    pub lap_result: Lap,
+    pub lap_history: LapHistory,
     pub laps: Vec<Lap>,
 
     pub state_tx: UnboundedSender<StateChange>,
     pub setup_tx: UnboundedSender<SetupChange>,
 }
 
-#[derive(Default, Debug, Clone)]
-pub struct Lap {
-    pub h_physics: Vec<Physics>,
-    pub h_graphics: Vec<Graphics>,
+#[derive(Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct LapTime(Duration);
+
+impl From<Duration> for LapTime {
+    fn from(value: Duration) -> Self {
+        LapTime(value)
+    }
 }
 
-impl Lap {
-    pub fn last_point(&self) -> Option<(&Physics, &Graphics)> {
-        if self.h_physics.last().is_some() && self.h_graphics.last().is_some() {
-            Some((
-                self.h_physics.last().unwrap(),
-                self.h_graphics.last().unwrap(),
-            ))
-        } else {
-            None
-        }
+impl Display for LapTime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let secs = self.0.as_secs();
+        let minutes = secs / 60;
+        let secs = secs - (minutes * 60);
+        let millis = self.0.subsec_millis();
+        write!(f, "{:02}:{:02}.{:03}", minutes, secs, millis)
     }
-    pub fn avg_tyre_pressures(&self) -> Wheels<f32> {
-        let (fl, fr, rl, rr) = self
-            .h_physics
-            .iter()
-            .fold((0.0, 0.0, 0.0, 0.0), |mut wheels, p| {
-                wheels.0 += p.wheels.front_left.tyre_pressure;
-                wheels.1 += p.wheels.front_right.tyre_pressure;
-                wheels.2 += p.wheels.rear_left.tyre_pressure;
-                wheels.3 += p.wheels.rear_right.tyre_pressure;
+}
 
-                wheels
-            });
-
-        let count = self.h_physics.len();
-
-        Wheels {
-            front_left: fl / count as f32,
-            front_right: fr / count as f32,
-            rear_left: rl / count as f32,
-            rear_right: rr / count as f32,
-        }
-    }
+#[derive(Default, Debug, Clone, PartialEq)]
+pub struct Lap {
+    pub number: i32,
+    pub sectors: Vec<LapTime>,
+    pub time: LapTime,
+    pub valid: bool,
+    pub tyre_pressure: AvgMinMax<Wheels<f32>>,
+    pub tyre_temperature: AvgMinMax<Wheels<f32>>,
+    pub brake_temperature: AvgMinMax<Wheels<f32>>,
 }
 
 impl Telemetry {
@@ -80,7 +72,8 @@ impl Telemetry {
             static_data: Default::default(),
             physics: Default::default(),
             graphics: Default::default(),
-            current_lap: Default::default(),
+            lap_result: Default::default(),
+            lap_history: Default::default(),
             laps: Default::default(),
         }
     }
@@ -138,7 +131,7 @@ impl Telemetry {
 
     pub fn cleanup(&mut self) {
         self.laps = Vec::new();
-        self.current_lap = Lap::default();
+        self.lap_history = LapHistory::default();
     }
 
     pub fn run(&mut self) {
@@ -188,45 +181,69 @@ impl Telemetry {
                 match self.refresh() {
                     Ok((p_changed, g_changed)) => {
                         if self.graphics.status == Status::Live {
-                            if let Some((_l_physics, l_graphics)) = self.current_lap.last_point() {
-                                if l_graphics.lap_timing.best != self.graphics.lap_timing.best
+                            if let Some((_l_physics, l_graphics)) = self.lap_history.last_point() {
+                                if l_graphics.current_sector_index
+                                    < self.graphics.current_sector_index
                                 {
-                                    self.setup_tx
-                                        .unbounded_send(SetupChange::BestLap(
-                                            self.graphics.lap_timing.best.clone(),
-                                        ))
-                                        .unwrap();
-                                }
-                                
-                                if l_graphics.fuel_used_per_lap != self.graphics.fuel_used_per_lap
-                                {
-                                    self.setup_tx
-                                        .unbounded_send(SetupChange::FuelPerLap(
-                                            self.graphics.fuel_used_per_lap,
-                                        ))
-                                        .unwrap();
+                                    self.lap_result.sectors.push(Duration::from_millis(
+                                        l_graphics.lap_timing.last_sector_ms as u64,
+                                    ).into());
                                 }
 
                                 if l_graphics.completed_laps < self.graphics.completed_laps {
                                     // For future development with more detailed metrics
                                     // self.laps.push(self.current_lap.clone());
 
-                                    debug!("finished lap: {:?}", self.graphics.completed_laps);
+                                    if l_graphics.lap_timing.best != self.graphics.lap_timing.best {
+                                        self.setup_tx
+                                            .unbounded_send(SetupChange::BestLap(
+                                                self.graphics.lap_timing.best.clone(),
+                                            ))
+                                            .unwrap();
+                                    }
+
+                                    if l_graphics.fuel_used_per_lap
+                                        != self.graphics.fuel_used_per_lap
+                                    {
+                                        self.setup_tx
+                                            .unbounded_send(SetupChange::FuelPerLap(
+                                                self.graphics.fuel_used_per_lap,
+                                            ))
+                                            .unwrap();
+                                    }
+
+                                    self.lap_result.time = Duration::from_millis(
+                                        l_graphics.lap_timing.last.millis as u64,
+                                    ).into();
+
+                                    self.lap_result.get_avg_min_max(&self.lap_history);
+                                    self.lap_result.number = self.graphics.completed_laps;
+                                    self.lap_result.valid = self.graphics.is_valid_lap;
+
+                                    debug!("finished lap: {:?}", self.lap_result);
+
+                                    self.state_tx
+                                        .unbounded_send(StateChange::Lap(std::mem::take(
+                                            &mut self.lap_result,
+                                        )))
+                                        .unwrap();
+
                                     self.state_tx
                                         .unbounded_send(StateChange::AvgTyrePressure(
-                                            self.current_lap.avg_tyre_pressures(),
+                                            self.lap_history.avg_tyre_pressure(),
                                         ))
                                         .unwrap();
-                                    self.current_lap = Lap::default();
+
+                                    self.lap_history = LapHistory::default();
                                 }
                             }
 
                             if p_changed {
-                                self.current_lap.h_physics.push(self.physics.clone());
+                                self.lap_history.h_physics.push(self.physics.clone());
                             }
 
                             if g_changed {
-                                self.current_lap.h_graphics.push(self.graphics.clone());
+                                self.lap_history.h_graphics.push(self.graphics.clone());
                             }
                         } else if self.graphics.status == Status::Off {
                             if self.connected {

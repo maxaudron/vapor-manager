@@ -1,9 +1,18 @@
-use std::str::FromStr;
+use std::{str::FromStr, time::Duration};
 
 use dioxus::prelude::*;
 use strum::IntoEnumIterator;
 
-use crate::{setup::SetupManager, telemetry::{broadcast::{BroadcastInboundMessage, RaceSessionType, RealtimeUpdate, SessionPhase, TrackData}, Wheels}, State, StateChange};
+use crate::{
+    setup::SetupManager,
+    telemetry::{
+        broadcast::{
+            BroadcastInboundMessage, RaceSessionType, RealtimeUpdate, SessionPhase, TrackData,
+        },
+        AvgMinMax, Lap, Wheels,
+    },
+    State, StateChange,
+};
 
 #[component]
 pub fn Debug() -> Element {
@@ -189,23 +198,41 @@ pub fn Debug() -> Element {
                     }
                     input { class: "btn btn-sm", r#type: "submit" }
                 }
-                form { class: "grid grid-cols-7", onsubmit: move |event| {
-                    let values = event.values();
-                    let session_type = RaceSessionType::from_str(&values.get("session_type").unwrap().as_value()).unwrap();
-                    let phase = SessionPhase::from_str(&values.get("phase").unwrap().as_value()).unwrap();
-                    let session_end_time = values.get("session_end_time").unwrap().as_value().parse().unwrap();
-                    let ambient_temp = values.get("ambient_temp").unwrap().as_value().parse().unwrap();
-                    let track_temp = values.get("track_temp").unwrap().as_value().parse().unwrap();
-
-                    broadcast_debug.send(BroadcastInboundMessage::RealtimeUpdate(RealtimeUpdate { 
-                        session_type,
-                        phase,
-                        session_end_time,
-                        ambient_temp,
-                        track_temp,
-                        ..Default::default()
-                    }));
-                },
+                form {
+                    class: "grid grid-cols-7",
+                    onsubmit: move |event| {
+                        let values = event.values();
+                        let session_type = RaceSessionType::from_str(
+                                &values.get("session_type").unwrap().as_value(),
+                            )
+                            .unwrap();
+                        let phase = SessionPhase::from_str(&values.get("phase").unwrap().as_value())
+                            .unwrap();
+                        let session_end_time = values
+                            .get("session_end_time")
+                            .unwrap()
+                            .as_value()
+                            .parse()
+                            .unwrap();
+                        let ambient_temp = values
+                            .get("ambient_temp")
+                            .unwrap()
+                            .as_value()
+                            .parse()
+                            .unwrap();
+                        let track_temp = values.get("track_temp").unwrap().as_value().parse().unwrap();
+                        broadcast_debug
+                            .send(
+                                BroadcastInboundMessage::RealtimeUpdate(RealtimeUpdate {
+                                    session_type,
+                                    phase,
+                                    session_end_time,
+                                    ambient_temp,
+                                    track_temp,
+                                    ..Default::default()
+                                }),
+                            );
+                    },
                     h1 { "RealtimeUpdate" }
                     select {
                         name: "session_type",
@@ -240,6 +267,105 @@ pub fn Debug() -> Element {
                         class: "input input-bordered input-sm bg-surface0",
                         name: "track_temp",
                         placeholder: "track temp"
+                    }
+                    input { class: "btn btn-sm", r#type: "submit" }
+                }
+            }
+            div { class: "grid auto-rows-min",
+                h1 { class: "", "Laps" }
+                form {
+                    class: "grid grid-cols-4",
+                    onsubmit: move |event| {
+                        let values = event.values();
+                        let number = values.get("lapcount").unwrap().as_value().parse().unwrap();
+                        let time = Duration::from_millis(values.get("laptime").unwrap().as_value().parse().unwrap()).into();
+                        let valid = values.get("valid").unwrap_or(&FormValue(vec!["false".to_string()])).as_value() == "true";
+                        let sector1 = Duration::from_millis(values.get("sector1").unwrap().as_value().parse().unwrap()).into();
+                        let sector2 = Duration::from_millis(values.get("sector2").unwrap().as_value().parse().unwrap()).into();
+                        let sector3 = Duration::from_millis(values.get("sector3").unwrap().as_value().parse().unwrap()).into();
+                        let sectors = vec![sector1, sector2, sector3];
+                        let tyre_pressure: f32 = values.get("lap_tyre_pressure").unwrap().as_value().parse().unwrap();
+                        let tyre_pressure = Wheels { front_left: tyre_pressure, front_right: tyre_pressure, rear_left: tyre_pressure, rear_right: tyre_pressure };
+                        let tyre_pressure = AvgMinMax { avg: tyre_pressure, min: tyre_pressure, max: tyre_pressure };
+                        let tyre_temperature: f32 = values.get("lap_tyre_temperature").unwrap().as_value().parse().unwrap();
+                        let tyre_temperature = Wheels { front_left: tyre_temperature, front_right: tyre_temperature, rear_left: tyre_temperature, rear_right: tyre_temperature };
+                        let tyre_temperature = AvgMinMax { avg: tyre_temperature, min: tyre_temperature, max: tyre_temperature };
+                        let brake_temperature: f32 = values.get("lap_brake_temperature").unwrap().as_value().parse().unwrap();
+                        let brake_temperature = Wheels { front_left: brake_temperature, front_right: brake_temperature, rear_left: brake_temperature, rear_right: brake_temperature };
+                        let brake_temperature = AvgMinMax { avg: brake_temperature, min: brake_temperature, max: brake_temperature };
+
+                        state_change.send(StateChange::Lap(Lap {
+                            number,
+                            sectors,
+                            time,
+                            valid,
+                            tyre_pressure,
+                            tyre_temperature,
+                            brake_temperature
+                        }))
+                    },
+                    input {
+                        r#type: "number",
+                        class: "input input-bordered input-sm bg-surface0",
+                        name: "lapcount",
+                        value: "1",
+                        placeholder: "lapcount"
+                    }
+                    input {
+                        r#type: "number",
+                        class: "input input-bordered input-sm bg-surface0",
+                        name: "laptime",
+                        value: "78400",
+                        placeholder: "laptime"
+                    }
+                    input {
+                        r#type: "checkbox",
+                        class: "checkbox",
+                        name: "valid",
+                        value: "true",
+                        placeholder: "valid",
+                    }
+                    input {
+                        r#type: "number",
+                        class: "input input-bordered input-sm bg-surface0",
+                        name: "sector1",
+                        value: "9820",
+                        placeholder: "sector1"
+                    }
+                    input {
+                        r#type: "number",
+                        class: "input input-bordered input-sm bg-surface0",
+                        name: "sector2",
+                        value: "2390",
+                        placeholder: "sector2"
+                    }
+                    input {
+                        r#type: "number",
+                        class: "input input-bordered input-sm bg-surface0",
+                        name: "sector3",
+                        value: "4902",
+                        placeholder: "sector3"
+                    }
+                    input {
+                        r#type: "number",
+                        class: "input input-bordered input-sm bg-surface0",
+                        name: "lap_tyre_pressure",
+                        value: "27",
+                        placeholder: "tyre pressure"
+                    }
+                    input {
+                        r#type: "number",
+                        class: "input input-bordered input-sm bg-surface0",
+                        name: "lap_tyre_temperature",
+                        value: "80",
+                        placeholder: "tyre temperature"
+                    }
+                    input {
+                        r#type: "number",
+                        class: "input input-bordered input-sm bg-surface0",
+                        name: "lap_brake_temperature",
+                        value: "500",
+                        placeholder: "brake temperature"
                     }
                     input { class: "btn btn-sm", r#type: "submit" }
                 }
