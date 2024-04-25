@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 .btn-active-primary {
-    @apply bg-primary text-warning-content;
+    @apply bg-base border border-primary text-primary;
 }
 
 .btn-active-primary:hover {
-    @apply bg-primary text-warning-content;
+    @apply bg-base border border-primary text-primary;
     filter: brightness(85%);
 }
 

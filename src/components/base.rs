@@ -16,11 +16,11 @@ pub fn Base() -> Element {
 
     rsx! {
         div {
-            class: "h-[100vh] w-[100vw] grid grid-rows-[auto_minmax(0,_1fr)_auto] {theme_lower} bg-crust",
+            class: "h-[100vh] w-[100vw] grid grid-rows-[auto_minmax(0,_1fr)] gap-2 p-2 {theme_lower} bg-crust",
             "data-theme": "{theme:?}",
-            div { class: "grid grid-cols-2",
+            div { class: "grid grid-cols-[max-content_1fr_max-content] gap-4",
                 div { class: "justify-self-start",
-                    ul { class: "menu menu-horizontal rounded-box gap-2",
+                    ul { class: "menu menu-horizontal gap-2 p-0",
                         li {
                             Link {
                                 class: if (route == Route::Home {}) {
@@ -35,8 +35,9 @@ pub fn Base() -> Element {
                         DebugLink { route: route.clone() }
                     }
                 }
+                StatusBar {}
                 div { class: "justify-self-end",
-                    ul { class: "menu menu-horizontal rounded-box gap-2",
+                    ul { class: "menu menu-horizontal gap-2 p-0",
                         li {
                             Link {
                                 class: if (route == Route::Settings {}) {
@@ -52,7 +53,6 @@ pub fn Base() -> Element {
                 }
             }
             Outlet::<Route> {}
-            StatusBar {}
         }
     }
 }
@@ -81,13 +81,12 @@ fn DebugLink(route: Route) -> Element {
 #[component]
 pub fn Home() -> Element {
     rsx! {
-        div { class: "grid grid-rows-[min-content_auto] gap-2 px-2",
-            div { class: "grid grid-cols-[max-content_auto_max-content] gap-2 h-min",
-                WheelPressures {}
-                SetupView {}
-                FuelCalculator {}
-            }
+        div { class: "grid grid-cols-[auto_max-content] gap-2",
             Laps {}
+            div { class: "grid grid-rows-[max-content_auto] gap-2 h-min",
+                FuelCalculator {}
+                SetupView {}
+            }
         }
     }
 }

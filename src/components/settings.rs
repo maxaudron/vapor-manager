@@ -109,7 +109,7 @@ pub fn Settings() -> Element {
     });
 
     rsx! {
-        div { class: "grid auto-rows-min bg-base rounded-md shadow-lg p-4 mx-2 gap-4",
+        div { class: "grid auto-rows-min bg-base rounded-md shadow-lg p-4 gap-4",
             div { class: "grid auto-rows-min gap-2",
                 h1 { class: "text-xl", "App" }
                 div { class: "label bg-surface0 rounded-md h-min px-2 pr-4",

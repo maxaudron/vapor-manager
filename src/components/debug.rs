@@ -33,7 +33,7 @@ pub fn Debug() -> Element {
     };
 
     rsx! {
-        div { class: "grid auto-rows-min bg-base rounded-md shadow-lg p-4 mx-2 gap-4 overflow-scroll",
+        div { class: "grid auto-rows-min bg-base rounded-md shadow-lg p-4 gap-4 overflow-scroll",
             div { class: "grid grid-cols-3 gap-4",
                 label { class: "label cursor-pointer bg-surface0 rounded-md h-min px-2",
                     span { class: "label-text", "debug" }
