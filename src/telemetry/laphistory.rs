@@ -12,6 +12,10 @@ macro_rules! avg_min_max {
             pub fn [<max_ $name>](&self) -> Wheels<$t> {
                 self.h_physics
                     .iter()
+                    .filter(|p| p.wheels.front_left.$field > 0.0
+                                || p.wheels.front_right.$field > 0.0
+                                || p.wheels.rear_left.$field > 0.0
+                                || p.wheels.rear_right.$field > 0.0)
                     .fold(($t::MIN, $t::MIN, $t::MIN, $t::MIN), |mut wheels, p| {
                         if wheels.0 < p.wheels.front_left.$field {
                             wheels.0 = p.wheels.front_left.$field;
@@ -34,6 +38,10 @@ macro_rules! avg_min_max {
             pub fn [<min_ $name>](&self) -> Wheels<$t> {
                 self.h_physics
                     .iter()
+                    .filter(|p| p.wheels.front_left.$field > 0.0
+                                || p.wheels.front_right.$field > 0.0
+                                || p.wheels.rear_left.$field > 0.0
+                                || p.wheels.rear_right.$field > 0.0)
                     .fold(($t::MAX, $t::MAX, $t::MAX, $t::MAX), |mut wheels, p| {
                         if wheels.0 > p.wheels.front_left.$field {
                             wheels.0 = p.wheels.front_left.$field;
@@ -54,11 +62,17 @@ macro_rules! avg_min_max {
             }
 
             pub fn [<avg_ $name>](&self) -> Wheels<$t> {
-                let count = self.h_physics.len() as $t;
-                let wheels: Wheels<$t> = self
+                let wheels: Vec<&Physics> = self
                     .h_physics
                     .iter()
-                    .fold(($t::MIN, $t::MIN, $t::MIN, $t::MIN), |mut wheels, p| {
+                    .filter(|p| p.wheels.front_left.$field > 0.0
+                                || p.wheels.front_right.$field > 0.0
+                                || p.wheels.rear_left.$field > 0.0
+                                || p.wheels.rear_right.$field > 0.0
+                                ).collect();
+                let count = wheels.len() as $t;
+                let wheels: Wheels<$t> = wheels.iter()
+                    .fold(($t::default(), $t::default(), $t::default(), $t::default()), |mut wheels, p| {
                         wheels.0 += p.wheels.front_left.$field;
                         wheels.1 += p.wheels.front_right.$field;
                         wheels.2 += p.wheels.rear_left.$field;
@@ -68,6 +82,7 @@ macro_rules! avg_min_max {
                     })
                     .into();
 
+                tracing::debug!("count: {:?} wheels: {:?}", count, wheels);
                 wheels / (count, count, count, count).into()
             }
         }
@@ -94,20 +109,20 @@ impl LapHistory {
 impl Lap {
     pub fn get_avg_min_max(&mut self, history: &LapHistory) {
         self.tyre_pressure = AvgMinMax {
-                avg: history.avg_tyre_pressure(),
-                min: history.min_tyre_pressure(),
-                max: history.max_tyre_pressure(),
-            };
+            avg: history.avg_tyre_pressure(),
+            min: history.min_tyre_pressure(),
+            max: history.max_tyre_pressure(),
+        };
         self.tyre_temperature = AvgMinMax {
-                avg: history.avg_tyre_temperature(),
-                min: history.min_tyre_temperature(),
-                max: history.max_tyre_temperature(),
-            };
+            avg: history.avg_tyre_temperature(),
+            min: history.min_tyre_temperature(),
+            max: history.max_tyre_temperature(),
+        };
         self.brake_temperature = AvgMinMax {
-                avg: history.avg_brake_temperature(),
-                min: history.min_brake_temperature(),
-                max: history.max_brake_temperature(),
-            };
+            avg: history.avg_brake_temperature(),
+            min: history.min_brake_temperature(),
+            max: history.max_brake_temperature(),
+        };
     }
 }
 
