@@ -185,12 +185,16 @@ impl Telemetry {
                                 if l_graphics.current_sector_index
                                     < self.graphics.current_sector_index
                                 {
-                                    self.lap_result.sectors.push(Duration::from_millis(
-                                        l_graphics.lap_timing.last_sector_ms as u64,
-                                    ).into());
+                                    self.lap_result.sectors.push(
+                                        Duration::from_millis(
+                                            self.graphics.lap_timing.last_sector_ms as u64,
+                                        )
+                                        .into(),
+                                    );
                                 }
 
-                                if l_graphics.completed_laps < self.graphics.completed_laps {
+                                if l_graphics.completed_laps < self.graphics.completed_laps
+                                {
                                     // For future development with more detailed metrics
                                     // self.laps.push(self.current_lap.clone());
 
@@ -212,13 +216,33 @@ impl Telemetry {
                                             .unwrap();
                                     }
 
+                                    self.lap_result.sectors.push(
+                                        Duration::from_millis(
+                                            self.graphics.lap_timing.last.millis as u64,
+                                        )
+                                        .into(),
+                                    );
+                                    self.lap_result.sectors = self
+                                        .lap_result
+                                        .sectors
+                                        .iter()
+                                        .scan(0u128, |state, sector| {
+                                            let new = Duration::from_millis(
+                                                (sector.0.as_millis() - *state) as u64,
+                                            );
+                                            *state = sector.0.as_millis();
+                                            Some(new.into())
+                                        })
+                                        .collect();
+
                                     self.lap_result.time = Duration::from_millis(
-                                        l_graphics.lap_timing.last.millis as u64,
-                                    ).into();
+                                        self.graphics.lap_timing.last.millis as u64,
+                                    )
+                                    .into();
 
                                     self.lap_result.get_avg_min_max(&self.lap_history);
                                     self.lap_result.number = self.graphics.completed_laps;
-                                    self.lap_result.valid = self.graphics.is_valid_lap;
+                                    self.lap_result.valid = l_graphics.is_valid_lap;
 
                                     debug!("finished lap: {:?}", self.lap_result);
 
