@@ -26,7 +26,7 @@ pub use r#static::*;
 pub trait SharedMemoryPage {
     const NAME: &'static [u8; 21];
 
-    #[cfg(windows)]
+    #[cfg(all(windows, not(feature = "debugger")))]
     fn get_reference() -> Result<&'static Self, TelemetryError>
     where
         Self: Sized + std::fmt::Debug,
@@ -46,7 +46,7 @@ pub trait SharedMemoryPage {
         Ok(data)
     }
 
-    #[cfg(not(windows))]
+    #[cfg(any(not(windows), feature = "debugger"))]
     fn get_reference() -> Result<&'static Self, TelemetryError>
     where
         Self: Sized + std::fmt::Debug,

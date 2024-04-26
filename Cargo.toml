@@ -29,3 +29,8 @@ num_enum = "0.7"
 strum = { version = "0.26", features = ["derive"] }
 
 paste = "1"
+
+[features]
+default = []
+
+debugger = []
