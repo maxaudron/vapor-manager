@@ -198,13 +198,11 @@ impl Telemetry {
                                     // For future development with more detailed metrics
                                     // self.laps.push(self.current_lap.clone());
 
-                                    if l_graphics.lap_timing.best != self.graphics.lap_timing.best {
-                                        self.setup_tx
-                                            .unbounded_send(SetupChange::BestLap(
-                                                self.graphics.lap_timing.best.clone(),
-                                            ))
-                                            .unwrap();
-                                    }
+                                    self.setup_tx
+                                        .unbounded_send(SetupChange::BestLap(
+                                            self.graphics.lap_timing.best.clone(),
+                                        ))
+                                        .unwrap();
 
                                     if l_graphics.fuel_used_per_lap
                                         != self.graphics.fuel_used_per_lap
