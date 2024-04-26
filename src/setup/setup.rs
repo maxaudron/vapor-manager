@@ -59,7 +59,7 @@ impl Setup {
         let diff = self.air_temperature as i8 - air_temperature as i8;
         debug!(
             "adjusting pressure to temp {:?} by {:?} clicks",
-            air_temperature, -diff
+            air_temperature, diff
         );
         self.name = format!(
             "{:?}c {:?}c {}",
@@ -82,7 +82,7 @@ impl Setup {
                 s.tyres
                     .tyre_pressure
                     .iter_mut()
-                    .for_each(|i| *i += -diff as i32)
+                    .for_each(|i| *i += diff as i32)
             })
     }
 
