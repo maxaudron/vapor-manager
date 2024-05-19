@@ -83,7 +83,7 @@ pub fn Home() -> Element {
     rsx! {
         div { class: "grid grid-cols-[auto_max-content] gap-2",
             Laps {}
-            div { class: "grid grid-rows-[max-content_auto] gap-2 h-min",
+            div { class: "grid grid-rows-[max-content_1fr] gap-2",
                 FuelCalculator {}
                 SetupView {}
             }

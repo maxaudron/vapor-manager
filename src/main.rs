@@ -94,7 +94,7 @@ fn main() {
     let config = Config::new().with_disable_context_menu(true);
     #[cfg(not(debug_assertions))]
     let config = config.with_menu(None);
-    let size = LogicalSize::new(1200, 600);
+    let size = LogicalSize::new(1250, 800);
     LaunchBuilder::desktop()
         .with_cfg(
             config.with_window(

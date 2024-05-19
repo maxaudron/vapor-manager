@@ -81,74 +81,74 @@ pub fn Laps() -> Element {
                                         })}
                                         td {
                                             div { class: "grid grid-cols-[min-content_min-content] grid-rows-2 gap-x-1 text-xs",
-                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.min.front_left)}", "{lap.tyre_pressure.min.front_left}" }
-                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.min.front_right)}", "{lap.tyre_pressure.min.front_right}" }
-                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.min.rear_left)}", "{lap.tyre_pressure.min.rear_left}" }
-                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.min.rear_right)}", "{lap.tyre_pressure.min.rear_right}" }
+                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.min.front_left)}", "{lap.tyre_pressure.min.front_left:.1}" }
+                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.min.front_right)}", "{lap.tyre_pressure.min.front_right:.1}" }
+                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.min.rear_left)}", "{lap.tyre_pressure.min.rear_left:.1}" }
+                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.min.rear_right)}", "{lap.tyre_pressure.min.rear_right:.1}" }
                                             }
                                         }
                                         td {
                                             div { class: "grid grid-cols-[min-content_min-content] grid-rows-2 gap-x-1 text-xs",
-                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.avg.front_left)}", "{lap.tyre_pressure.avg.front_left}" }
-                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.avg.front_right)}", "{lap.tyre_pressure.avg.front_right}" }
-                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.avg.rear_left)}", "{lap.tyre_pressure.avg.rear_left}" }
-                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.avg.rear_right)}", "{lap.tyre_pressure.avg.rear_right}" }
+                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.avg.front_left)}", "{lap.tyre_pressure.avg.front_left:.1}" }
+                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.avg.front_right)}", "{lap.tyre_pressure.avg.front_right:.1}" }
+                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.avg.rear_left)}", "{lap.tyre_pressure.avg.rear_left:.1}" }
+                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.avg.rear_right)}", "{lap.tyre_pressure.avg.rear_right:.1}" }
                                             }
                                         }
                                         td {
                                             div { class: "grid grid-cols-[min-content_min-content] grid-rows-2 gap-x-1 text-xs",
-                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.max.front_left)}", "{lap.tyre_pressure.max.front_left}" }
-                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.max.front_right)}", "{lap.tyre_pressure.max.front_right}" }
-                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.max.rear_left)}", "{lap.tyre_pressure.max.rear_left}" }
-                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.max.rear_right)}", "{lap.tyre_pressure.max.rear_right}" }
+                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.max.front_left)}", "{lap.tyre_pressure.max.front_left:.1}" }
+                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.max.front_right)}", "{lap.tyre_pressure.max.front_right:.1}" }
+                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.max.rear_left)}", "{lap.tyre_pressure.max.rear_left:.1}" }
+                                                div { style: "{tyre_pressure_color(lap.tyre_pressure.max.rear_right)}", "{lap.tyre_pressure.max.rear_right:.1}" }
                                             }
                                         }
                                         td {
                                             div { class: "grid grid-cols-[min-content_min-content] grid-rows-2 gap-x-1 text-xs",
-                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.min.front_left)}", "{lap.tyre_temperature.min.front_left}" }
-                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.min.front_right)}", "{lap.tyre_temperature.min.front_right}" }
-                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.min.rear_left)}", "{lap.tyre_temperature.min.rear_left}" }
-                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.min.rear_right)}", "{lap.tyre_temperature.min.rear_right}" }
+                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.min.front_left)}", "{lap.tyre_temperature.min.front_left:.0}" }
+                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.min.front_right)}", "{lap.tyre_temperature.min.front_right:.0}" }
+                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.min.rear_left)}", "{lap.tyre_temperature.min.rear_left:.0}" }
+                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.min.rear_right)}", "{lap.tyre_temperature.min.rear_right:.0}" }
                                             }
                                         }
                                         td {
                                             div { class: "grid grid-cols-[min-content_min-content] grid-rows-2 gap-x-1 text-xs",
-                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.avg.front_left)}", "{lap.tyre_temperature.avg.front_left}" }
-                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.avg.front_right)}", "{lap.tyre_temperature.avg.front_right}" }
-                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.avg.rear_left)}", "{lap.tyre_temperature.avg.rear_left}" }
-                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.avg.rear_right)}", "{lap.tyre_temperature.avg.rear_right}" }
+                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.avg.front_left)}", "{lap.tyre_temperature.avg.front_left:.0}" }
+                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.avg.front_right)}", "{lap.tyre_temperature.avg.front_right:.0}" }
+                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.avg.rear_left)}", "{lap.tyre_temperature.avg.rear_left:.0}" }
+                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.avg.rear_right)}", "{lap.tyre_temperature.avg.rear_right:.0}" }
                                             }
                                         }
                                         td {
                                             div { class: "grid grid-cols-[min-content_min-content] grid-rows-2 gap-x-1 text-xs",
-                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.max.front_left)}", "{lap.tyre_temperature.max.front_left}" }
-                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.max.front_right)}", "{lap.tyre_temperature.max.front_right}" }
-                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.max.rear_left)}", "{lap.tyre_temperature.max.rear_left}" }
-                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.max.rear_right)}", "{lap.tyre_temperature.max.rear_right}" }
+                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.max.front_left)}", "{lap.tyre_temperature.max.front_left:.0}" }
+                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.max.front_right)}", "{lap.tyre_temperature.max.front_right:.0}" }
+                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.max.rear_left)}", "{lap.tyre_temperature.max.rear_left:.0}" }
+                                                div { style: "{tyre_temperature_color(lap.tyre_temperature.max.rear_right)}", "{lap.tyre_temperature.max.rear_right:.0}" }
                                             }
                                         }
                                         td {
                                             div { class: "grid grid-cols-[min-content_min-content] grid-rows-2 gap-x-1 text-xs",
-                                                div { style: "{brake_temperature_color(lap.brake_temperature.min.front_left)}", "{lap.brake_temperature.min.front_left}" }
-                                                div { style: "{brake_temperature_color(lap.brake_temperature.min.front_right)}", "{lap.brake_temperature.min.front_right}" }
-                                                div { style: "{brake_temperature_color(lap.brake_temperature.min.rear_left)}", "{lap.brake_temperature.min.rear_left}" }
-                                                div { style: "{brake_temperature_color(lap.brake_temperature.min.rear_right)}", "{lap.brake_temperature.min.rear_right}" }
+                                                div { style: "{brake_temperature_color(lap.brake_temperature.min.front_left)}", "{lap.brake_temperature.min.front_left:.0}" }
+                                                div { style: "{brake_temperature_color(lap.brake_temperature.min.front_right)}", "{lap.brake_temperature.min.front_right:.0}" }
+                                                div { style: "{brake_temperature_color(lap.brake_temperature.min.rear_left)}", "{lap.brake_temperature.min.rear_left:.0}" }
+                                                div { style: "{brake_temperature_color(lap.brake_temperature.min.rear_right)}", "{lap.brake_temperature.min.rear_right:.0}" }
                                             }
                                         }
                                         td {
                                             div { class: "grid grid-cols-[min-content_min-content] grid-rows-2 gap-x-1 text-xs",
-                                                div { style: "{brake_temperature_color(lap.brake_temperature.avg.front_left)}", "{lap.brake_temperature.avg.front_left}" }
-                                                div { style: "{brake_temperature_color(lap.brake_temperature.avg.front_right)}", "{lap.brake_temperature.avg.front_right}" }
-                                                div { style: "{brake_temperature_color(lap.brake_temperature.avg.rear_left)}", "{lap.brake_temperature.avg.rear_left}" }
-                                                div { style: "{brake_temperature_color(lap.brake_temperature.avg.rear_right)}", "{lap.brake_temperature.avg.rear_right}" }
+                                                div { style: "{brake_temperature_color(lap.brake_temperature.avg.front_left)}", "{lap.brake_temperature.avg.front_left:.0}" }
+                                                div { style: "{brake_temperature_color(lap.brake_temperature.avg.front_right)}", "{lap.brake_temperature.avg.front_right:.0}" }
+                                                div { style: "{brake_temperature_color(lap.brake_temperature.avg.rear_left)}", "{lap.brake_temperature.avg.rear_left:.0}" }
+                                                div { style: "{brake_temperature_color(lap.brake_temperature.avg.rear_right)}", "{lap.brake_temperature.avg.rear_right:.0}" }
                                             }
                                         }
                                         td {
                                             div { class: "grid grid-cols-[min-content_min-content] grid-rows-2 gap-x-1 text-xs",
-                                                div { style: "{brake_temperature_color(lap.brake_temperature.max.front_left)}", "{lap.brake_temperature.max.front_left}" }
-                                                div { style: "{brake_temperature_color(lap.brake_temperature.max.front_right)}", "{lap.brake_temperature.max.front_right}" }
-                                                div { style: "{brake_temperature_color(lap.brake_temperature.max.rear_left)}", "{lap.brake_temperature.max.rear_left}" }
-                                                div { style: "{brake_temperature_color(lap.brake_temperature.max.rear_right)}", "{lap.brake_temperature.max.rear_right}" }
+                                                div { style: "{brake_temperature_color(lap.brake_temperature.max.front_left)}", "{lap.brake_temperature.max.front_left:.0}" }
+                                                div { style: "{brake_temperature_color(lap.brake_temperature.max.front_right)}", "{lap.brake_temperature.max.front_right:.0}" }
+                                                div { style: "{brake_temperature_color(lap.brake_temperature.max.rear_left)}", "{lap.brake_temperature.max.rear_left:.0}" }
+                                                div { style: "{brake_temperature_color(lap.brake_temperature.max.rear_right)}", "{lap.brake_temperature.max.rear_right:.0}" }
                                             }
                                         }
                                     }
