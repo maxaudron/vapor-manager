@@ -10,7 +10,7 @@ use dioxus::{
 };
 use futures_util::stream::StreamExt;
 
-use telemetry::{Lap, SessionType, Wheels};
+use telemetry::{Lap, SessionType};
 
 pub mod setup;
 pub mod telemetry;
@@ -38,7 +38,6 @@ pub static PROGRAM_NAME: &'static str = "Vapor Manager";
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum StateChange {
-    AvgTyrePressure(Wheels<f32>),
     Weather(Weather),
     TrackName(String),
     SessionType(SessionType),
@@ -52,7 +51,6 @@ pub struct State {
     pub debug: bool,
     pub shm_connected: bool,
     pub broadcast_connected: bool,
-    pub avg_tyre_pressures: Wheels<f32>,
     pub weather: Weather,
     pub track_name: String,
     pub session_type: SessionType,
@@ -133,7 +131,6 @@ fn App() -> Element {
         to_owned![state];
         while let Some(msg) = rx.next().await {
             match msg {
-                StateChange::AvgTyrePressure(wheels) => state.write().avg_tyre_pressures = wheels,
                 StateChange::Weather(weather) => state.write().weather = weather,
                 StateChange::TrackName(name) => state.write().track_name = name,
                 StateChange::SessionType(session) => state.write().session_type = session,

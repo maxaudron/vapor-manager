@@ -3,11 +3,7 @@ use futures_util::StreamExt;
 use std::{path::PathBuf, time::Duration};
 use tracing::{debug, error};
 
-use crate::{
-    components::settings::Settings,
-    telemetry::{LapTime, Time},
-    Weather, PROGRAM_NAME,
-};
+use crate::{components::settings::Settings, telemetry::LapTime, Weather, PROGRAM_NAME};
 
 use super::{Setup, SetupError};
 

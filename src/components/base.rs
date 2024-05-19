@@ -2,7 +2,8 @@ use dioxus::prelude::*;
 
 use crate::{
     components::{
-        fuel_calculator::FuelCalculator, laps::Laps, setups::SetupView, status_bar::StatusBar, theme::Theme, wheels::WheelPressures
+        fuel_calculator::FuelCalculator, laps::Laps, setups::SetupView, status_bar::StatusBar,
+        theme::Theme,
     },
     Route,
 };

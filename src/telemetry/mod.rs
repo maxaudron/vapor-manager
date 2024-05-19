@@ -250,12 +250,6 @@ impl Telemetry {
                                         )))
                                         .unwrap();
 
-                                    self.state_tx
-                                        .unbounded_send(StateChange::AvgTyrePressure(
-                                            self.lap_history.avg_tyre_pressure(),
-                                        ))
-                                        .unwrap();
-
                                     self.lap_history = LapHistory::default();
                                 }
                             }

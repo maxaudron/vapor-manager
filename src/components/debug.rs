@@ -22,16 +22,6 @@ pub fn Debug() -> Element {
 
     let state_change = use_coroutine_handle::<StateChange>();
 
-    let (fl, fr, rl, rr) = {
-        let state = state.read();
-        (
-            state.avg_tyre_pressures.front_left,
-            state.avg_tyre_pressures.front_right,
-            state.avg_tyre_pressures.rear_left,
-            state.avg_tyre_pressures.rear_right,
-        )
-    };
-
     rsx! {
         div { class: "grid auto-rows-min bg-base rounded-md shadow-lg p-4 gap-4 overflow-scroll",
             div { class: "grid grid-cols-3 gap-4",
@@ -65,103 +55,6 @@ pub fn Debug() -> Element {
                         oninput: move |event| {
                             let is_enabled = event.value() == "true";
                             state.write().broadcast_connected = is_enabled;
-                        }
-                    }
-                }
-            }
-            div { class: "grid auto-rows-min",
-                h1 { "Tyre Pressure" }
-                div { class: "grid grid-cols-4 gap-4",
-                    label { class: "label cursor-pointer bg-surface0 rounded-md h-min px-2",
-                        span { class: "label-text", "FL {fl:03.1}" }
-                        input {
-                            class: "",
-                            r#type: "range",
-                            min: "23.0",
-                            max: "30.0",
-                            step: "0.1",
-                            class: "range",
-                            value: "{fl}",
-                            oninput: move |event| {
-                                state_change
-                                    .send(
-                                        StateChange::AvgTyrePressure(Wheels::<f32> {
-                                            front_left: event.value().parse().unwrap(),
-                                            front_right: fr,
-                                            rear_left: rl,
-                                            rear_right: rr,
-                                        }),
-                                    )
-                            }
-                        }
-                    }
-                    label { class: "label cursor-pointer bg-surface0 rounded-md h-min px-2",
-                        span { class: "label-text", "FR {fr:03.1}" }
-                        input {
-                            class: "",
-                            r#type: "range",
-                            min: "23.0",
-                            max: "30.0",
-                            step: "0.1",
-                            class: "range",
-                            value: "{fr}",
-                            oninput: move |event| {
-                                state_change
-                                    .send(
-                                        StateChange::AvgTyrePressure(Wheels::<f32> {
-                                            front_left: fl,
-                                            front_right: event.value().parse().unwrap(),
-                                            rear_left: rl,
-                                            rear_right: rr,
-                                        }),
-                                    )
-                            }
-                        }
-                    }
-                    label { class: "label cursor-pointer bg-surface0 rounded-md h-min px-2",
-                        span { class: "label-text", "RL {rl:03.1}" }
-                        input {
-                            class: "",
-                            r#type: "range",
-                            min: "23.0",
-                            max: "30.0",
-                            step: "0.1",
-                            class: "range",
-                            value: "{rl}",
-                            oninput: move |event| {
-                                state_change
-                                    .send(
-                                        StateChange::AvgTyrePressure(Wheels::<f32> {
-                                            front_left: fl,
-                                            front_right: fr,
-                                            rear_left: event.value().parse().unwrap(),
-                                            rear_right: rr,
-                                        }),
-                                    )
-                            }
-                        }
-                    }
-                    label { class: "label cursor-pointer bg-surface0 rounded-md h-min px-2",
-                        span { class: "label-text", "RR {rr:03.1}" }
-                        input {
-                            class: "",
-                            r#type: "range",
-                            min: "23.0",
-                            max: "30.0",
-                            step: "0.1",
-                            class: "range",
-                            value: "{rr}",
-                            oninput: move |event| {
-                                state_change
-                                    .send(
-                                        StateChange::AvgTyrePressure(Wheels::<f32> {
-                                            front_left: fl,
-                                            front_right: fr,
-                                            rear_left: rl,
-                                            rear_right: event.value().parse().unwrap(),
-                                        }),
-                                    )
-                            }
                         }
                     }
                 }

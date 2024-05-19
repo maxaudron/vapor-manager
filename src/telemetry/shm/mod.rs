@@ -1,7 +1,7 @@
 // b"Local\\acpmf_physics\0"
 // b"Local\\acpmf_static\0"
 
-#[cfg(windows)]
+#[cfg(all(windows, not(feature = "debugger")))]
 use std::ffi::c_void;
 
 use super::TelemetryError;
