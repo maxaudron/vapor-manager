@@ -22,8 +22,8 @@ pub fn FuelCalculator() -> Element {
             }
             div { class: "label p-0 border-b-[1px] border-crust",
                 span { class: "label-text text-nowrap p-4", "Best Lap" }
-                { if setup_manager.read().best_lap.millis > 0 {
-                    rsx! { span { class: "label-text text-nowrap p-4", "{setup_manager.read().best_lap.text}" } }
+                { if setup_manager.read().best_lap.duration().as_millis() > 0 {
+                    rsx! { span { class: "label-text text-nowrap p-4", "{setup_manager.read().best_lap}" } }
                 } else {
                     rsx! { span { class: "label-text text-nowrap p-4 text-red", "Drive Lap" } }
                 }

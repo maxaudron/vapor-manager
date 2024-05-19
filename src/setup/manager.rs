@@ -3,20 +3,24 @@ use futures_util::StreamExt;
 use std::{path::PathBuf, time::Duration};
 use tracing::{debug, error};
 
-use crate::{components::settings::Settings, telemetry::Time, Weather, PROGRAM_NAME};
+use crate::{
+    components::settings::Settings,
+    telemetry::{LapTime, Time},
+    Weather, PROGRAM_NAME,
+};
 
 use super::{Setup, SetupError};
 
 pub type Car = String;
 pub type Track = String;
 pub type FuelPerLap = f32;
-pub type BestLap = Time;
+pub type BestLap = LapTime;
 
 pub enum SetupChange {
     Weather(Weather),
     SessionLength(Duration),
     FuelPerLap(FuelPerLap),
-    BestLap(BestLap),
+    LapTime(BestLap),
     Load((Car, Track)),
     ReserveLaps(i32),
 }
@@ -97,19 +101,30 @@ impl SetupManager {
         new.iter_mut()
             .for_each(|setup| setup.adjust_pressure(air_temperature, road_temperature));
         self.adj_setups = new;
+        self.save_fuel();
     }
 
     pub fn calculate_fuel(&mut self) {
-        if !self.session_length.is_zero() && self.best_lap.millis != 0 && self.fuel_per_lap != 0.0 {
-            let laps = self.session_length.as_millis() / self.best_lap.millis as u128;
+        let best_millis = self.best_lap.duration().as_millis();
+        if !self.session_length.is_zero() && best_millis != 0 && self.fuel_per_lap != 0.0 {
+            let laps = self.session_length.as_millis() / best_millis as u128;
             debug!(
                 "calculating fuel: {:?} time {:?} l {:?} laps, reserve laps: {:?}",
-                self.session_length, self.best_lap.millis, laps, self.reserve_laps
+                self.session_length, best_millis, laps, self.reserve_laps
             );
             let fuel = (((laps + self.reserve_laps as u128) as f32 * self.fuel_per_lap) * 1.1)
                 .round() as i32;
             self.fuel = fuel;
         }
+
+        self.calculate_reserve_fuel();
+        self.save_fuel();
+    }
+
+    pub fn save_fuel(&mut self) {
+        self.adj_setups
+            .iter_mut()
+            .for_each(|setup| setup.basic_setup.strategy.fuel = self.fuel)
     }
 
     pub fn calculate_reserve_fuel(&mut self) {
@@ -163,21 +178,18 @@ impl SetupManager {
                     let mut manager = setup_manager.write();
                     manager.fuel_per_lap = fuel_per_lap;
                     manager.calculate_fuel();
-                    manager.calculate_reserve_fuel();
                 }
-                SetupChange::BestLap(best_lap) => {
-                    debug!("got best_lap: {best_lap:?}");
+                SetupChange::LapTime(lap_time) => {
+                    debug!("got average lap time: {lap_time:?}");
                     let mut manager = setup_manager.write();
-                    manager.best_lap = best_lap;
+                    manager.best_lap = lap_time;
                     manager.calculate_fuel();
-                    manager.calculate_reserve_fuel();
                 }
                 SetupChange::ReserveLaps(laps) => {
                     debug!("got reserve laps: {laps}");
                     let mut manager = setup_manager.write();
                     manager.reserve_laps = laps;
                     manager.calculate_fuel();
-                    manager.calculate_reserve_fuel();
                 }
             }
         }

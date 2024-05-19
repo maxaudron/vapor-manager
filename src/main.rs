@@ -158,7 +158,22 @@ fn App() -> Element {
                     }
                 }
                 StateChange::Lap(lap) => {
-                    state.write().laps.push(lap)
+                    state.write().laps.push(lap);
+
+                    let state = state.read();
+                    let num_valid_laps = state.laps.iter().filter(|lap| lap.valid).count();
+                    if num_valid_laps > 1 {
+                        let avg_laptime = state.laps.iter().filter(|lap| lap.valid).fold(
+                            Duration::default(),
+                            |mut sum, lap| {
+                                sum += lap.time.duration();
+                                sum
+                            },
+                        );
+
+                        let avg_laptime = avg_laptime / num_valid_laps as u32;
+                        setup_manager.send(SetupChange::LapTime(avg_laptime.into()))
+                    }
                 }
             }
         }
