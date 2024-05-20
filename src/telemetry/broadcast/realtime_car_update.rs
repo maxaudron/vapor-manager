@@ -9,7 +9,7 @@ use crate::telemetry::broadcast::read_lap;
 
 use super::{BroadcastNetworkProtocolInbound, CarLocation, InboundMessageTypes, LapInfo};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct RealtimeCarUpdate {
     /// ID
     pub car_index: i16,

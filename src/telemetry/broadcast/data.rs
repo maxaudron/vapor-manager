@@ -14,7 +14,7 @@ pub enum DriverCategory {
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, IntoPrimitive, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, IntoPrimitive, FromPrimitive, PartialEq, PartialOrd)]
 pub enum CarLocation {
     #[default]
     NONE = 0,

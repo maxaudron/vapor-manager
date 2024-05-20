@@ -1,19 +1,19 @@
 use dioxus::prelude::*;
 
-use crate::State;
+use crate::{telemetry::broadcast::LapType, State};
 
 #[component]
 pub fn Laps() -> Element {
     let state: Signal<State> = use_context();
 
-    if state.read().laps.is_empty() {
+    if state.read().laps_times.is_empty() {
         rsx! { 
             div { class: "grid bg-base rounded-lg shadow-lg overflow-auto h-auto",
                 div { class: "justify-self-center align-middle", "No Laps Recorded" }
             }
         }
     } else {
-        let sectors = state.read().laps.first().unwrap().sectors.len();
+        let sectors = state.read().laps_times.first().unwrap().sectors.len();
 
         rsx! {
             div { class: "bg-base rounded-lg shadow-lg scrollable h-auto",
@@ -69,12 +69,12 @@ pub fn Laps() -> Element {
                     }
                     tbody {
                         {
-                            state.read().laps.iter().map(|lap| {
+                            state.read().laps_times.iter().zip(state.read().laps_wheels.iter()).map(|(times, lap)| {
                                 rsx! {
                                     tr {
-                                        th { "{lap.number}" }
-                                        td { class: if !lap.valid { "text-red" }, "{lap.time}" }
-                                        { lap.sectors.iter().map(|sector| {
+                                        th { "{times.number}" }
+                                        td { class: if !times.valid { "text-red" }, "{times.time}" }
+                                        { times.sectors.iter().map(|sector| {
                                             rsx! {
                                                 td { "{sector}" }
                                             }
@@ -152,6 +152,13 @@ pub fn Laps() -> Element {
                                             }
                                         }
                                     }
+                                    { if times.lap_type == LapType::Outlap {
+                                        rsx! {
+                                            tr {
+                                                th { "Pit" }
+                                            }
+                                        }
+                                    } else { rsx! {} }}
                                 }
                             })
                         }

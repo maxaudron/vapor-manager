@@ -10,7 +10,7 @@ use dioxus::{
 };
 use futures_util::stream::StreamExt;
 
-use telemetry::{Lap, SessionType};
+use telemetry::{broadcast::LapTimeData, LapWheels, SessionType};
 
 pub mod setup;
 pub mod telemetry;
@@ -29,7 +29,7 @@ use crate::{
     components::theme::Theme,
     setup::{SetupChange, SetupManager},
     telemetry::{
-        broadcast::{BroadcastMsg, BroadcastState},
+        broadcast::{BroadcastMsg, BroadcastState, LapType},
         Telemetry,
     },
 };
@@ -43,7 +43,8 @@ pub enum StateChange {
     SessionType(SessionType),
     ShmConnected(bool),
     BroadcastConnected(bool),
-    Lap(Lap),
+    LapWheels(LapWheels),
+    LapTimeData(LapTimeData),
     Reset,
 }
 
@@ -55,7 +56,8 @@ pub struct State {
     pub weather: Weather,
     pub track_name: String,
     pub session_type: SessionType,
-    pub laps: Vec<Lap>,
+    pub laps_wheels: Vec<LapWheels>,
+    pub laps_times: Vec<LapTimeData>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -155,19 +157,27 @@ fn App() -> Element {
                         broadcast_tx.unbounded_send(BroadcastMsg::Aborted).unwrap();
                     }
                 }
-                StateChange::Lap(lap) => {
-                    state.write().laps.push(lap);
-
+                StateChange::LapWheels(lap) => {
+                    state.write().laps_wheels.push(lap);
+                }
+                StateChange::LapTimeData(lap) => {
+                    debug!("got laptime data: {:?}", lap);
+                    state.write().laps_times.push(lap);
                     let state = state.read();
-                    let num_valid_laps = state.laps.iter().filter(|lap| lap.valid).count();
+                    let num_valid_laps = state
+                        .laps_times
+                        .iter()
+                        .filter(|lap| lap.valid && lap.lap_type == LapType::Regular)
+                        .count();
                     if num_valid_laps > 1 {
-                        let avg_laptime = state.laps.iter().filter(|lap| lap.valid).fold(
-                            Duration::default(),
-                            |mut sum, lap| {
+                        let avg_laptime = state
+                            .laps_times
+                            .iter()
+                            .filter(|lap| lap.valid && lap.lap_type == LapType::Regular)
+                            .fold(Duration::default(), |mut sum, lap| {
                                 sum += lap.time.duration();
                                 sum
-                            },
-                        );
+                            });
 
                         let avg_laptime = avg_laptime / num_valid_laps as u32;
                         setup_manager.send(SetupChange::LapTime(avg_laptime.into()))
@@ -175,7 +185,8 @@ fn App() -> Element {
                 }
                 StateChange::Reset => {
                     let mut state = state.write();
-                    state.laps = Vec::new();
+                    state.laps_wheels = Vec::new();
+                    state.laps_times = Vec::new();
                 }
             }
         }

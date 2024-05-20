@@ -1,4 +1,4 @@
-use super::{Graphics, Lap, Physics, Wheels};
+use super::{Graphics, LapWheels, Physics, Wheels};
 
 #[derive(Default, Debug, Clone)]
 pub struct LapHistory {
@@ -106,7 +106,7 @@ impl LapHistory {
     avg_min_max!(f32, tyre_pressure, tyre_pressure);
 }
 
-impl Lap {
+impl LapWheels {
     pub fn get_avg_min_max(&mut self, history: &LapHistory) {
         self.tyre_pressure = AvgMinMax {
             avg: history.avg_tyre_pressure(),

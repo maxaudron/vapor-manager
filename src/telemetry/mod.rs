@@ -22,9 +22,9 @@ pub struct Telemetry {
     pub static_data: StaticData,
     pub physics: Physics,
     pub graphics: Graphics,
-    pub lap_result: Lap,
+    pub lap_result: LapWheels,
     pub lap_history: LapHistory,
-    pub laps: Vec<Lap>,
+    pub laps: Vec<LapWheels>,
 
     pub state_tx: UnboundedSender<StateChange>,
     pub setup_tx: UnboundedSender<SetupChange>,
@@ -56,11 +56,8 @@ impl LapTime {
 }
 
 #[derive(Default, Debug, Clone, PartialEq)]
-pub struct Lap {
+pub struct LapWheels {
     pub number: i32,
-    pub sectors: Vec<LapTime>,
-    pub time: LapTime,
-    pub valid: bool,
     pub tyre_pressure: AvgMinMax<Wheels<f32>>,
     pub tyre_temperature: AvgMinMax<Wheels<f32>>,
     pub brake_temperature: AvgMinMax<Wheels<f32>>,
@@ -189,16 +186,6 @@ impl Telemetry {
                     Ok((p_changed, g_changed)) => {
                         if self.graphics.status == Status::Live {
                             if let Some((_l_physics, l_graphics)) = self.lap_history.last_point() {
-                                if l_graphics.current_sector_index
-                                    < self.graphics.current_sector_index
-                                {
-                                    self.lap_result.sectors.push(
-                                        Duration::from_millis(
-                                            self.graphics.lap_timing.last_sector_ms as u64,
-                                        )
-                                        .into(),
-                                    );
-                                }
 
                                 if l_graphics.completed_laps < self.graphics.completed_laps {
                                     // For future development with more detailed metrics
@@ -214,38 +201,14 @@ impl Telemetry {
                                             .unwrap();
                                     }
 
-                                    self.lap_result.sectors.push(
-                                        Duration::from_millis(
-                                            self.graphics.lap_timing.last.millis as u64,
-                                        )
-                                        .into(),
-                                    );
-                                    self.lap_result.sectors = self
-                                        .lap_result
-                                        .sectors
-                                        .iter()
-                                        .scan(0u128, |state, sector| {
-                                            let new = Duration::from_millis(
-                                                (sector.0.as_millis() - *state) as u64,
-                                            );
-                                            *state = sector.0.as_millis();
-                                            Some(new.into())
-                                        })
-                                        .collect();
-
-                                    self.lap_result.time = Duration::from_millis(
-                                        self.graphics.lap_timing.last.millis as u64,
-                                    )
-                                    .into();
 
                                     self.lap_result.get_avg_min_max(&self.lap_history);
                                     self.lap_result.number = self.graphics.completed_laps;
-                                    self.lap_result.valid = l_graphics.is_valid_lap;
 
                                     debug!("finished lap: {:?}", self.lap_result);
 
                                     self.state_tx
-                                        .unbounded_send(StateChange::Lap(std::mem::take(
+                                        .unbounded_send(StateChange::LapWheels(std::mem::take(
                                             &mut self.lap_result,
                                         )))
                                         .unwrap();

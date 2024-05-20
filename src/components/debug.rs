@@ -7,9 +7,9 @@ use crate::{
     setup::SetupManager,
     telemetry::{
         broadcast::{
-            BroadcastInboundMessage, RaceSessionType, RealtimeUpdate, SessionPhase, TrackData,
+            BroadcastInboundMessage, LapTimeData, LapType, RaceSessionType, RealtimeUpdate, SessionPhase, TrackData
         },
-        AvgMinMax, Lap, Wheels,
+        AvgMinMax, LapWheels, Wheels,
     },
     State, StateChange,
 };
@@ -187,15 +187,20 @@ pub fn Debug() -> Element {
                         let brake_temperature = Wheels { front_left: brake_temperature, front_right: brake_temperature, rear_left: brake_temperature, rear_right: brake_temperature };
                         let brake_temperature = AvgMinMax { avg: brake_temperature, min: brake_temperature, max: brake_temperature };
 
-                        state_change.send(StateChange::Lap(Lap {
+                        state_change.send(StateChange::LapTimeData(LapTimeData {
                             number,
                             sectors,
                             time,
                             valid,
+                            lap_type: LapType::Regular,
+                        }));
+
+                        state_change.send(StateChange::LapWheels(LapWheels {
+                            number,
                             tyre_pressure,
                             tyre_temperature,
-                            brake_temperature
-                        }))
+                            brake_temperature,
+                        }));
                     },
                     input {
                         r#type: "number",

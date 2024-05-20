@@ -1,6 +1,6 @@
 use dioxus::hooks::{UnboundedReceiver, UnboundedSender};
 use futures_util::StreamExt;
-use std::{io, net::Ipv4Addr, sync::Arc};
+use std::{io, net::Ipv4Addr, sync::Arc, time::Duration};
 use tokio::net::UdpSocket;
 use tracing::{debug, error};
 
@@ -8,9 +8,9 @@ use super::{
     disconnect,
     registration::{RegisterConnection, RegistrationResult},
     BroadcastNetworkProtocolInbound, BroadcastNetworkProtocolOutbound, EntryList,
-    InboundMessageTypes, RealtimeUpdate, RequestTrackData, TrackData,
+    InboundMessageTypes, LapType, RealtimeCarUpdate, RealtimeUpdate, RequestTrackData, TrackData,
 };
-use crate::{setup::SetupChange, StateChange, Weather};
+use crate::{setup::SetupChange, telemetry::LapTime, StateChange, Weather};
 
 pub struct BroadcastState {
     connection_id: i32,
@@ -21,6 +21,8 @@ pub struct BroadcastState {
     setup_tx: UnboundedSender<SetupChange>,
     socket: Option<Arc<UdpSocket>>,
     broadcast_rx: UnboundedReceiver<BroadcastMsg>,
+
+    realtime_car_update: RealtimeCarUpdate,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -28,6 +30,15 @@ pub enum BroadcastMsg {
     Connect,
     Disconnect,
     Aborted,
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct LapTimeData {
+    pub number: i32,
+    pub sectors: Vec<LapTime>,
+    pub time: LapTime,
+    pub valid: bool,
+    pub lap_type: LapType,
 }
 
 impl BroadcastState {
@@ -41,6 +52,7 @@ impl BroadcastState {
             _entry_list: Default::default(),
             track_data: Default::default(),
             realtime_update: Default::default(),
+            realtime_car_update: Default::default(),
             state_tx,
             setup_tx,
             socket: None,
@@ -152,7 +164,40 @@ impl BroadcastState {
 
                             self.realtime_update = update;
                         }
-                        InboundMessageTypes::RealtimeCarUpdate => (),
+                        InboundMessageTypes::RealtimeCarUpdate => {
+                            let (_input, update) = RealtimeCarUpdate::deserialize(input).unwrap();
+                            if self.realtime_car_update.laps != update.laps {
+                                debug!("laps: {:?}", update.laps);
+                                self.realtime_car_update.laps = update.laps;
+
+                                if update.laps >= 1 {
+                                    let last = update.last_lap;
+
+                                    self.state_tx
+                                        .unbounded_send(StateChange::LapTimeData(LapTimeData { number: update.laps as i32,
+                                            sectors: last.splits.iter().filter_map(|s| *s)
+                                                .map(|s| Duration::from_millis(s as u64).into())
+                                                .collect(),
+                                            lap_type: last.lap_type,
+                                            time: Duration::from_millis(last.laptime.unwrap() as u64).into(),
+                                            valid: !last.invalid,
+                                        }))
+                                        .unwrap();
+                                }
+                            }
+                            // if self.realtime_car_update.best_session_lap != update.best_session_lap {
+                            //     debug!("best_session_lap: {:?}", update.best_session_lap);
+                            //     self.realtime_car_update.best_session_lap = update.best_session_lap;
+                            // }
+                            // if self.realtime_car_update.last_lap != update.last_lap {
+                            //     debug!("last_lap: {:?}", update.last_lap);
+                            //     self.realtime_car_update.last_lap = update.last_lap.clone();
+                            // }
+                            // if self.realtime_car_update.current_lap != update.current_lap {
+                            //     debug!("current_lap: {:?}", update.current_lap);
+                            //     self.realtime_car_update.current_lap = update.current_lap;
+                            // }
+                        },
                         InboundMessageTypes::EntryList => (),
                         InboundMessageTypes::EntryListCar => (),
                         InboundMessageTypes::TrackData => {
