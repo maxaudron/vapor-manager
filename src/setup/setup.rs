@@ -5,7 +5,7 @@ use std::{
 
 use tracing::debug;
 
-use crate::setup::Setup;
+use crate::setup::{Setup, SetupType};
 
 impl Setup {
     pub fn load(path: &Path) -> Setup {
@@ -26,6 +26,15 @@ impl Setup {
         setup.air_temperature = (&name[0..2]).parse().unwrap();
         setup.road_temperature = (&name[4..6]).parse().unwrap();
         setup.path = path.to_owned();
+
+        setup.setup_type = if name.contains(" Q ") {
+            SetupType::Qualifying
+        } else if name.contains(" R ") {
+            SetupType::Race
+        } else {
+            SetupType::Base
+        };
+        
         setup.name = name;
 
         setup

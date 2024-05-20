@@ -154,6 +154,7 @@ impl Telemetry {
                             debug!("connected to acc");
 
                             self.send_connected();
+                            self.state_tx.unbounded_send(StateChange::Reset).unwrap();
                             self.setup_tx
                                 .unbounded_send(SetupChange::Load((
                                     self.static_data.car_model.to_string(),
@@ -199,8 +200,7 @@ impl Telemetry {
                                     );
                                 }
 
-                                if l_graphics.completed_laps < self.graphics.completed_laps
-                                {
+                                if l_graphics.completed_laps < self.graphics.completed_laps {
                                     // For future development with more detailed metrics
                                     // self.laps.push(self.current_lap.clone());
 

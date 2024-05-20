@@ -16,6 +16,7 @@ fn test_setup_serialize() {
 fn setup() -> Setup {
     Setup {
         name: "".to_string(),
+        setup_type: SetupType::Base,
         air_temperature: 0,
         road_temperature: 0,
         path: "".into(),

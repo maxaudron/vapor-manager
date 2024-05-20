@@ -44,6 +44,7 @@ pub enum StateChange {
     ShmConnected(bool),
     BroadcastConnected(bool),
     Lap(Lap),
+    Reset,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -171,6 +172,10 @@ fn App() -> Element {
                         let avg_laptime = avg_laptime / num_valid_laps as u32;
                         setup_manager.send(SetupChange::LapTime(avg_laptime.into()))
                     }
+                }
+                StateChange::Reset => {
+                    let mut state = state.write();
+                    state.laps = Vec::new();
                 }
             }
         }

@@ -143,9 +143,10 @@ impl BroadcastState {
                             if self.realtime_update.session_length() != update.session_length() {
                                 debug!("session time: {:?}", update.session_length());
                                 self.setup_tx
-                                    .unbounded_send(SetupChange::SessionLength(
+                                    .unbounded_send(SetupChange::SessionLength((
+                                        update.session_type,
                                         std::time::Duration::from_millis(update.session_length().round() as u64),
-                                    ))
+                                    )))
                                     .unwrap();
                             }
 

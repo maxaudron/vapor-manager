@@ -3,7 +3,11 @@ use futures_util::StreamExt;
 use std::{path::PathBuf, time::Duration};
 use tracing::{debug, error};
 
-use crate::{components::settings::Settings, telemetry::LapTime, Weather, PROGRAM_NAME};
+use crate::{
+    components::settings::Settings,
+    telemetry::{broadcast::RaceSessionType, LapTime},
+    Weather, PROGRAM_NAME,
+};
 
 use super::{Setup, SetupError};
 
@@ -14,7 +18,7 @@ pub type BestLap = LapTime;
 
 pub enum SetupChange {
     Weather(Weather),
-    SessionLength(Duration),
+    SessionLength((RaceSessionType, Duration)),
     FuelPerLap(FuelPerLap),
     LapTime(BestLap),
     Load((Car, Track)),
@@ -26,10 +30,12 @@ pub struct SetupManager {
     pub track: Track,
     pub car: Car,
 
-    pub session_length: Duration,
+    pub race_length: Duration,
+    pub qualifying_length: Duration,
     pub fuel_per_lap: FuelPerLap,
     pub best_lap: BestLap,
-    pub fuel: i32,
+    pub race_fuel: i32,
+    pub qualifying_fuel: i32,
     pub reserve_laps: i32,
     pub reserve_fuel_l: f32,
 
@@ -69,6 +75,7 @@ impl SetupManager {
             car: car.to_owned(),
             setup_folder,
             template_setup_folder,
+            qualifying_length: Duration::from_secs(15 * 60),
             ..Default::default()
         }
     }
@@ -102,15 +109,26 @@ impl SetupManager {
 
     pub fn calculate_fuel(&mut self) {
         let best_millis = self.best_lap.duration().as_millis();
-        if !self.session_length.is_zero() && best_millis != 0 && self.fuel_per_lap != 0.0 {
-            let laps = self.session_length.as_millis() / best_millis as u128;
+        if !self.race_length.is_zero() && best_millis != 0 && self.fuel_per_lap != 0.0 {
+            let laps = self.race_length.as_millis() / best_millis as u128;
             debug!(
                 "calculating fuel: {:?} time {:?} l {:?} laps, reserve laps: {:?}",
-                self.session_length, best_millis, laps, self.reserve_laps
+                self.race_length, best_millis, laps, self.reserve_laps
             );
             let fuel = (((laps + self.reserve_laps as u128) as f32 * self.fuel_per_lap) * 1.1)
                 .round() as i32;
-            self.fuel = fuel;
+            self.race_fuel = fuel;
+        }
+        
+        if !self.qualifying_length.is_zero() && best_millis != 0 && self.fuel_per_lap != 0.0 {
+            let laps = self.qualifying_length.as_millis() / best_millis as u128;
+            debug!(
+                "calculating fuel: {:?} time {:?} l {:?} laps, reserve laps: {:?}",
+                self.qualifying_length, best_millis, laps, self.reserve_laps
+            );
+            let fuel = (((laps + self.reserve_laps as u128) as f32 * self.fuel_per_lap) * 1.1)
+                .round() as i32;
+            self.qualifying_fuel = fuel;
         }
 
         self.calculate_reserve_fuel();
@@ -120,7 +138,12 @@ impl SetupManager {
     pub fn save_fuel(&mut self) {
         self.adj_setups
             .iter_mut()
-            .for_each(|setup| setup.basic_setup.strategy.fuel = self.fuel)
+            .for_each(|setup| {
+                match setup.setup_type {
+                    super::SetupType::Qualifying => setup.basic_setup.strategy.fuel = self.qualifying_fuel,
+                    _ => setup.basic_setup.strategy.fuel = self.race_fuel,
+                }
+            })
     }
 
     pub fn calculate_reserve_fuel(&mut self) {
@@ -163,11 +186,20 @@ impl SetupManager {
 
                     setup_manager.set(manager);
                 }
-                SetupChange::SessionLength(duration) => {
+                SetupChange::SessionLength((session_type, duration)) => {
                     debug!("got session length {duration:?}");
                     let mut manager = setup_manager.write();
-                    manager.session_length = duration;
-                    manager.calculate_fuel()
+                    match session_type {
+                        RaceSessionType::Qualifying => {
+                            manager.qualifying_length = duration;
+                            manager.calculate_fuel();
+                        },
+                        RaceSessionType::Race => {
+                            manager.race_length = duration;
+                            manager.calculate_fuel();
+                        },
+                        _ => (),
+                    }
                 }
                 SetupChange::FuelPerLap(fuel_per_lap) => {
                     debug!("got fuel_per_lap {fuel_per_lap}");

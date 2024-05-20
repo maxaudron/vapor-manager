@@ -2,10 +2,20 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
+#[derive(Default, Debug, Copy, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub enum SetupType {
+    #[default]
+    Base,
+    Race,
+    Qualifying,
+}
+
 #[derive(Default, Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Setup {
     #[serde(skip)]
     pub name: String,
+    #[serde(skip)]
+    pub setup_type: SetupType,
     #[serde(skip)]
     pub air_temperature: u8,
     #[serde(skip)]

@@ -2,7 +2,10 @@ use std::time::Duration;
 
 use dioxus::prelude::*;
 
-use crate::setup::{SetupChange, SetupManager};
+use crate::{
+    setup::{SetupChange, SetupManager},
+    telemetry::broadcast::RaceSessionType,
+};
 
 #[component]
 pub fn FuelCalculator() -> Element {
@@ -11,22 +14,86 @@ pub fn FuelCalculator() -> Element {
 
     rsx! {
         div { class: "grid auto-rows-min bg-base rounded-lg shadow-lg",
-            div { class: "label p-0 border-b-[1px] border-crust",
-                span { class: "label-text text-nowrap p-4", "Fuel/Lap" }
+            div { class: "label px-0 py-2 border-b-[1px] border-crust",
+                span { class: "label-text text-nowrap px-4", "Fuel/Lap" }
                 { if setup_manager.read().fuel_per_lap > 0.0 {
-                    rsx! { span { class: "label-text text-nowrap p-4", "{setup_manager.read().fuel_per_lap:.2} l" } }
+                    rsx! { span { class: "label-text text-nowrap px-4", "{setup_manager.read().fuel_per_lap:.2} l" } }
                 } else {
-                    rsx! { span { class: "label-text text-nowrap p-4 text-red", "Drive Lap" } }
+                    rsx! { span { class: "label-text text-nowrap px-4 text-red", "Drive Lap" } }
                 }
                 }
             }
-            div { class: "label p-0 border-b-[1px] border-crust",
-                span { class: "label-text text-nowrap p-4", "Best Lap" }
+            div { class: "label px-0 py-2 border-b-[1px] border-crust",
+                span { class: "label-text text-nowrap px-4", "Best Lap" }
                 { if setup_manager.read().best_lap.duration().as_millis() > 0 {
-                    rsx! { span { class: "label-text text-nowrap p-4", "{setup_manager.read().best_lap}" } }
+                    rsx! { span { class: "label-text text-nowrap px-4", "{setup_manager.read().best_lap}" } }
                 } else {
-                    rsx! { span { class: "label-text text-nowrap p-4 text-red", "Drive Lap" } }
+                    rsx! { span { class: "label-text text-nowrap px-4 text-red", "Drive Lap" } }
                 }
+                }
+            }
+            div { class: "grid auto-rows-min border-b-[1px] border-crust",
+                div { class: "label px-0 py-2 h-min",
+                    span { class: "label-text text-nowrap px-4", "Quali Duration" }
+                    input {
+                        r#type: "number",
+                        // 4rem
+                        class: "input input-bordered input-nospinner w-[6.5rem] pr-[3rem] pl-3 h-9",
+                        min: "0",
+                        max: "{u64::MAX}",
+                        step: "1",
+                        value: "{setup_manager.read().qualifying_length.as_secs() / 60}",
+                        oninput: move |event| {
+                            if event.value() != "" {
+                                setup_manager_tx
+                                    .send(
+                                        SetupChange::SessionLength((
+                                            RaceSessionType::Qualifying,
+                                            Duration::from_secs(event.value().parse::<u64>().unwrap() * 60),
+                                        )),
+                                    )
+                            }
+                        }
+                    }
+                    span { class: "ml-[-4.8rem] mr-[0.8rem]", "mins" }
+                }
+                ul { class: "menu menu-horizontal rounded-box gap-2 w-max pt-0",
+                    li {
+                        button {
+                            class: "btn btn-sm",
+                            onclick: move |_| {
+                                setup_manager_tx.send(SetupChange::SessionLength((
+                                    RaceSessionType::Qualifying,
+                                    Duration::from_secs(25 * 60)
+                                )))
+                            },
+                            "25 mins"
+                        }
+                    }
+                    li {
+                        button {
+                            class: "btn btn-sm",
+                            onclick: move |_| {
+                                setup_manager_tx.send(SetupChange::SessionLength((
+                                    RaceSessionType::Qualifying,
+                                    Duration::from_secs(45 * 60)
+                                )))
+                            },
+                            "45 mins"
+                        }
+                    }
+                    li {
+                        button {
+                            class: "btn btn-sm",
+                            onclick: move |_| {
+                                setup_manager_tx.send(SetupChange::SessionLength((
+                                    RaceSessionType::Qualifying,
+                                    Duration::from_secs(65 * 60)
+                                )))
+                            },
+                            "65 mins"
+                        }
+                    }
                 }
             }
             div { class: "grid auto-rows-min border-b-[1px] border-crust",
@@ -39,14 +106,15 @@ pub fn FuelCalculator() -> Element {
                         min: "0",
                         max: "{u64::MAX}",
                         step: "1",
-                        value: "{setup_manager.read().session_length.as_secs() / 60}",
+                        value: "{setup_manager.read().race_length.as_secs() / 60}",
                         oninput: move |event| {
                             if event.value() != "" {
                                 setup_manager_tx
                                     .send(
-                                        SetupChange::SessionLength(
+                                        SetupChange::SessionLength((
+                                            RaceSessionType::Race,
                                             Duration::from_secs(event.value().parse::<u64>().unwrap() * 60),
-                                        ),
+                                        )),
                                     )
                             }
                         }
@@ -58,7 +126,10 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx.send(SetupChange::SessionLength(Duration::from_secs(25 * 60)))
+                                setup_manager_tx.send(SetupChange::SessionLength((
+                                    RaceSessionType::Race,
+                                    Duration::from_secs(25 * 60)
+                                )))
                             },
                             "25 mins"
                         }
@@ -67,7 +138,10 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx.send(SetupChange::SessionLength(Duration::from_secs(45 * 60)))
+                                setup_manager_tx.send(SetupChange::SessionLength((
+                                    RaceSessionType::Race,
+                                    Duration::from_secs(45 * 60)
+                                )))
                             },
                             "45 mins"
                         }
@@ -76,19 +150,31 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx.send(SetupChange::SessionLength(Duration::from_secs(65 * 60)))
+                                setup_manager_tx.send(SetupChange::SessionLength((
+                                    RaceSessionType::Race,
+                                    Duration::from_secs(65 * 60)
+                                )))
                             },
                             "65 mins"
                         }
                     }
                 }
             }
-            div { class: "label p-0",
-                span { class: "label-text text-nowrap p-4", "Fuel Required" }
-                { if setup_manager.read().fuel > 0 {
-                    rsx! { span { class: "label-text text-nowrap text-green p-4", "{setup_manager.read().fuel} l" } }
+            div { class: "label p-0 pt-2 pb-1",
+                span { class: "label-text text-nowrap px-4", "Race Fuel" }
+                { if setup_manager.read().race_fuel > 0 {
+                    rsx! { span { class: "label-text text-nowrap text-green px-4", "{setup_manager.read().race_fuel} l" } }
                 } else {
-                    rsx! { span { class: "label-text text-nowrap p-4 text-red", "Enter Duration" } }
+                    rsx! { span { class: "label-text text-nowrap px-4 text-red", "Enter Duration" } }
+                }
+                }
+            }
+            div { class: "label p-0 pb-2 pt-1",
+                span { class: "label-text text-nowrap px-4", "Quali Fuel" }
+                { if setup_manager.read().race_fuel > 0 {
+                    rsx! { span { class: "label-text text-nowrap text-green px-4", "{setup_manager.read().qualifying_fuel} l" } }
+                } else {
+                    rsx! { span { class: "label-text text-nowrap px-4 text-red", "Enter Duration" } }
                 }
                 }
             }
