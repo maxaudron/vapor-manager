@@ -186,13 +186,13 @@ fn hue(range: f32, value: f32) -> String {
 }
 
 fn tyre_pressure_color(pressure: f32) -> String {
-    hue(225.0, factor_range(pressure, 22.0, 30.0, 26.0, 27.2))
+    hue(225.0, factor_range(pressure, 24.0, 29.0, 26.2, 27.0))
 }
 
 fn tyre_temperature_color(pressure: f32) -> String {
-    hue(225.0, factor_range(pressure, 50.0, 110.0, 80.0, 90.0))
+    hue(225.0, factor_range(pressure, 65.0, 110.0, 80.0, 90.0))
 }
 
 fn brake_temperature_color(pressure: f32) -> String {
-    hue(225.0, factor_range(pressure, 200.0, 800.0, 300.0, 650.0))
+    hue(225.0, factor_range(pressure, 200.0, 700.0, 300.0, 600.0))
 }
