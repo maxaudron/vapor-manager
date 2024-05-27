@@ -76,7 +76,7 @@ fn DebugLink(route: Route) -> Element {
     }
 
     #[cfg(not(debug_assertions))]
-    rsx! {}
+    rsx! {  }
 }
 
 #[component]

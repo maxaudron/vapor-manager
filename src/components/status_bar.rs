@@ -10,7 +10,9 @@ pub fn StatusBar() -> Element {
     if state.shm_connected && state.broadcast_connected {
         rsx! {
             div { class: "grid grid-cols-2 bg-base px-4 py-2 rounded-lg content-center",
-                div { class: "justify-self-start", div { "{state.track_name}" } }
+                div { class: "justify-self-start",
+                    div { "{state.track_name}" }
+                }
                 div { class: "grid grid-cols-2 justify-self-end gap-4",
                     div { "{state.weather.ambient_temp} C" }
                     div { "{state.weather.track_temp} C" }

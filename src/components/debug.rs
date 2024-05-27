@@ -171,36 +171,97 @@ pub fn Debug() -> Element {
                     onsubmit: move |event| {
                         let values = event.values();
                         let number = values.get("lapcount").unwrap().as_value().parse().unwrap();
-                        let time = Duration::from_millis(values.get("laptime").unwrap().as_value().parse().unwrap()).into();
-                        let valid = values.get("valid").unwrap_or(&FormValue(vec!["false".to_string()])).as_value() == "true";
-                        let sector1 = Duration::from_millis(values.get("sector1").unwrap().as_value().parse().unwrap()).into();
-                        let sector2 = Duration::from_millis(values.get("sector2").unwrap().as_value().parse().unwrap()).into();
-                        let sector3 = Duration::from_millis(values.get("sector3").unwrap().as_value().parse().unwrap()).into();
+                        let time = Duration::from_millis(
+                                values.get("laptime").unwrap().as_value().parse().unwrap(),
+                            )
+                            .into();
+                        let valid = values
+                            .get("valid")
+                            .unwrap_or(&FormValue(vec!["false".to_string()]))
+                            .as_value() == "true";
+                        let sector1 = Duration::from_millis(
+                                values.get("sector1").unwrap().as_value().parse().unwrap(),
+                            )
+                            .into();
+                        let sector2 = Duration::from_millis(
+                                values.get("sector2").unwrap().as_value().parse().unwrap(),
+                            )
+                            .into();
+                        let sector3 = Duration::from_millis(
+                                values.get("sector3").unwrap().as_value().parse().unwrap(),
+                            )
+                            .into();
                         let sectors = vec![sector1, sector2, sector3];
-                        let tyre_pressure: f32 = values.get("lap_tyre_pressure").unwrap().as_value().parse().unwrap();
-                        let tyre_pressure = Wheels { front_left: tyre_pressure, front_right: tyre_pressure, rear_left: tyre_pressure, rear_right: tyre_pressure };
-                        let tyre_pressure = AvgMinMax { avg: tyre_pressure, min: tyre_pressure, max: tyre_pressure };
-                        let tyre_temperature: f32 = values.get("lap_tyre_temperature").unwrap().as_value().parse().unwrap();
-                        let tyre_temperature = Wheels { front_left: tyre_temperature, front_right: tyre_temperature, rear_left: tyre_temperature, rear_right: tyre_temperature };
-                        let tyre_temperature = AvgMinMax { avg: tyre_temperature, min: tyre_temperature, max: tyre_temperature };
-                        let brake_temperature: f32 = values.get("lap_brake_temperature").unwrap().as_value().parse().unwrap();
-                        let brake_temperature = Wheels { front_left: brake_temperature, front_right: brake_temperature, rear_left: brake_temperature, rear_right: brake_temperature };
-                        let brake_temperature = AvgMinMax { avg: brake_temperature, min: brake_temperature, max: brake_temperature };
-
-                        state_change.send(StateChange::LapTimeData(LapTimeData {
-                            number,
-                            sectors,
-                            time,
-                            valid,
-                            lap_type: LapType::Regular,
-                        }));
-
-                        state_change.send(StateChange::LapWheels(LapWheels {
-                            number,
-                            tyre_pressure,
-                            tyre_temperature,
-                            brake_temperature,
-                        }));
+                        let tyre_pressure: f32 = values
+                            .get("lap_tyre_pressure")
+                            .unwrap()
+                            .as_value()
+                            .parse()
+                            .unwrap();
+                        let tyre_pressure = Wheels {
+                            front_left: tyre_pressure,
+                            front_right: tyre_pressure,
+                            rear_left: tyre_pressure,
+                            rear_right: tyre_pressure,
+                        };
+                        let tyre_pressure = AvgMinMax {
+                            avg: tyre_pressure,
+                            min: tyre_pressure,
+                            max: tyre_pressure,
+                        };
+                        let tyre_temperature: f32 = values
+                            .get("lap_tyre_temperature")
+                            .unwrap()
+                            .as_value()
+                            .parse()
+                            .unwrap();
+                        let tyre_temperature = Wheels {
+                            front_left: tyre_temperature,
+                            front_right: tyre_temperature,
+                            rear_left: tyre_temperature,
+                            rear_right: tyre_temperature,
+                        };
+                        let tyre_temperature = AvgMinMax {
+                            avg: tyre_temperature,
+                            min: tyre_temperature,
+                            max: tyre_temperature,
+                        };
+                        let brake_temperature: f32 = values
+                            .get("lap_brake_temperature")
+                            .unwrap()
+                            .as_value()
+                            .parse()
+                            .unwrap();
+                        let brake_temperature = Wheels {
+                            front_left: brake_temperature,
+                            front_right: brake_temperature,
+                            rear_left: brake_temperature,
+                            rear_right: brake_temperature,
+                        };
+                        let brake_temperature = AvgMinMax {
+                            avg: brake_temperature,
+                            min: brake_temperature,
+                            max: brake_temperature,
+                        };
+                        state_change
+                            .send(
+                                StateChange::LapTimeData(LapTimeData {
+                                    number,
+                                    sectors,
+                                    time,
+                                    valid,
+                                    lap_type: LapType::Regular,
+                                }),
+                            );
+                        state_change
+                            .send(
+                                StateChange::LapWheels(LapWheels {
+                                    number,
+                                    tyre_pressure,
+                                    tyre_temperature,
+                                    brake_temperature,
+                                }),
+                            );
                     },
                     input {
                         r#type: "number",
@@ -221,7 +282,7 @@ pub fn Debug() -> Element {
                         class: "checkbox",
                         name: "valid",
                         value: "true",
-                        placeholder: "valid",
+                        placeholder: "valid"
                     }
                     input {
                         r#type: "number",

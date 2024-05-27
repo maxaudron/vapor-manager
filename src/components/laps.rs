@@ -7,7 +7,7 @@ pub fn Laps() -> Element {
     let state: Signal<State> = use_context();
 
     if state.read().laps_times.is_empty() {
-        rsx! { 
+        rsx! {
             div { class: "grid bg-base rounded-lg shadow-lg overflow-auto h-auto",
                 div { class: "justify-self-center align-middle", "No Laps Recorded" }
             }
@@ -71,6 +71,13 @@ pub fn Laps() -> Element {
                         {
                             state.read().laps_times.iter().zip(state.read().laps_wheels.iter()).map(|(times, lap)| {
                                 rsx! {
+                                    { if times.lap_type == LapType::Outlap {
+                                        rsx! {
+                                            tr {
+                                                th { "Pit" }
+                                            }
+                                        }
+                                    } else { rsx! {} }}
                                     tr {
                                         th { "{times.number}" }
                                         td { class: if !times.valid { "text-red" }, "{times.time}" }
@@ -152,13 +159,6 @@ pub fn Laps() -> Element {
                                             }
                                         }
                                     }
-                                    { if times.lap_type == LapType::Outlap {
-                                        rsx! {
-                                            tr {
-                                                th { "Pit" }
-                                            }
-                                        }
-                                    } else { rsx! {} }}
                                 }
                             })
                         }

@@ -92,7 +92,18 @@ fn main() {
     #[cfg(not(windows))]
     const _TAILWIND_URL: &str = manganis::mg!(file("public/tailwind.css"));
 
-    let config = Config::new().with_disable_context_menu(true);
+    let mut config = Config::new().with_disable_context_menu(true);
+
+    #[cfg(windows)]
+    {
+
+        let mut documents =
+            known_folders::get_known_folder_path(known_folders::KnownFolder::Documents).unwrap();
+        documents.push(PROGRAM_NAME);
+        documents.push("webview");
+        config = config.with_data_directory(documents)
+    }
+
     #[cfg(not(debug_assertions))]
     let config = config.with_menu(None);
     let size = LogicalSize::new(1250, 800);
@@ -250,5 +261,7 @@ fn App() -> Element {
         }
     });
 
-    rsx! { Router::<Route> {} }
+    rsx! {
+        Router::<Route> {}
+    }
 }

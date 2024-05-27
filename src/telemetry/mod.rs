@@ -2,6 +2,7 @@ mod conversion;
 mod data;
 mod laphistory;
 pub use laphistory::*;
+use serde::{Deserialize, Serialize};
 pub mod shm;
 
 pub mod broadcast;
@@ -30,7 +31,7 @@ pub struct Telemetry {
     pub setup_tx: UnboundedSender<SetupChange>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct LapTime(Duration);
 
 impl From<Duration> for LapTime {

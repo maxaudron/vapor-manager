@@ -24,9 +24,9 @@ pub fn FuelCalculator() -> Element {
                 }
             }
             div { class: "label px-0 py-2 border-b-[1px] border-crust",
-                span { class: "label-text text-nowrap px-4", "Best Lap" }
-                { if setup_manager.read().best_lap.duration().as_millis() > 0 {
-                    rsx! { span { class: "label-text text-nowrap px-4", "{setup_manager.read().best_lap}" } }
+                span { class: "label-text text-nowrap px-4", "Avg Lap" }
+                { if setup_manager.read().avg_lap.duration().as_millis() > 0 {
+                    rsx! { span { class: "label-text text-nowrap px-4", "{setup_manager.read().avg_lap}" } }
                 } else {
                     rsx! { span { class: "label-text text-nowrap px-4 text-red", "Drive Lap" } }
                 }
@@ -62,10 +62,13 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx.send(SetupChange::SessionLength((
-                                    RaceSessionType::Qualifying,
-                                    Duration::from_secs(25 * 60)
-                                )))
+                                setup_manager_tx
+                                    .send(
+                                        SetupChange::SessionLength((
+                                            RaceSessionType::Qualifying,
+                                            Duration::from_secs(25 * 60),
+                                        )),
+                                    )
                             },
                             "25 mins"
                         }
@@ -74,10 +77,13 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx.send(SetupChange::SessionLength((
-                                    RaceSessionType::Qualifying,
-                                    Duration::from_secs(45 * 60)
-                                )))
+                                setup_manager_tx
+                                    .send(
+                                        SetupChange::SessionLength((
+                                            RaceSessionType::Qualifying,
+                                            Duration::from_secs(45 * 60),
+                                        )),
+                                    )
                             },
                             "45 mins"
                         }
@@ -86,10 +92,13 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx.send(SetupChange::SessionLength((
-                                    RaceSessionType::Qualifying,
-                                    Duration::from_secs(65 * 60)
-                                )))
+                                setup_manager_tx
+                                    .send(
+                                        SetupChange::SessionLength((
+                                            RaceSessionType::Qualifying,
+                                            Duration::from_secs(65 * 60),
+                                        )),
+                                    )
                             },
                             "65 mins"
                         }
@@ -126,10 +135,13 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx.send(SetupChange::SessionLength((
-                                    RaceSessionType::Race,
-                                    Duration::from_secs(25 * 60)
-                                )))
+                                setup_manager_tx
+                                    .send(
+                                        SetupChange::SessionLength((
+                                            RaceSessionType::Race,
+                                            Duration::from_secs(25 * 60),
+                                        )),
+                                    )
                             },
                             "25 mins"
                         }
@@ -138,10 +150,13 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx.send(SetupChange::SessionLength((
-                                    RaceSessionType::Race,
-                                    Duration::from_secs(45 * 60)
-                                )))
+                                setup_manager_tx
+                                    .send(
+                                        SetupChange::SessionLength((
+                                            RaceSessionType::Race,
+                                            Duration::from_secs(45 * 60),
+                                        )),
+                                    )
                             },
                             "45 mins"
                         }
@@ -150,10 +165,13 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx.send(SetupChange::SessionLength((
-                                    RaceSessionType::Race,
-                                    Duration::from_secs(65 * 60)
-                                )))
+                                setup_manager_tx
+                                    .send(
+                                        SetupChange::SessionLength((
+                                            RaceSessionType::Race,
+                                            Duration::from_secs(65 * 60),
+                                        )),
+                                    )
                             },
                             "65 mins"
                         }
