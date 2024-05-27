@@ -9,7 +9,7 @@ use crate::{
     Weather, PROGRAM_NAME,
 };
 
-use super::{Setup, SetupError};
+use super::{Setup, SetupError, SetupMeta};
 
 pub type Car = String;
 pub type Track = String;
@@ -33,7 +33,7 @@ pub struct SetupManager {
     pub race_length: Duration,
     pub qualifying_length: Duration,
     pub fuel_per_lap: FuelPerLap,
-    pub best_lap: BestLap,
+    pub avg_lap: BestLap,
     pub race_fuel: i32,
     pub qualifying_fuel: i32,
     pub reserve_laps: i32,
@@ -46,6 +46,16 @@ pub struct SetupManager {
 
     pub setup_folder: PathBuf,
     pub template_setup_folder: PathBuf,
+}
+
+impl Drop for SetupManager {
+    fn drop(&mut self) {
+        let meta = SetupMeta {
+            avg_lap: self.avg_lap.clone(),
+        };
+
+        meta.save(&self.template_setup_folder);
+    }
 }
 
 impl SetupManager {
@@ -70,13 +80,23 @@ impl SetupManager {
 
         std::fs::create_dir_all(&template_setup_folder).unwrap();
 
+        let meta = SetupMeta::read(&template_setup_folder);
+
         Self {
             track: track.to_owned(),
             car: car.to_owned(),
             setup_folder,
             template_setup_folder,
             qualifying_length: Duration::from_secs(15 * 60),
-            ..Default::default()
+            avg_lap: meta.avg_lap,
+            race_length: Default::default(),
+            fuel_per_lap: Default::default(),
+            race_fuel: Default::default(),
+            qualifying_fuel: Default::default(),
+            reserve_laps: Default::default(),
+            reserve_fuel_l: Default::default(),
+            setups: Default::default(),
+            adj_setups: Default::default(),
         }
     }
 
@@ -108,7 +128,7 @@ impl SetupManager {
     }
 
     pub fn calculate_fuel(&mut self) {
-        let best_millis = self.best_lap.duration().as_millis();
+        let best_millis = self.avg_lap.duration().as_millis();
         if !self.race_length.is_zero() && best_millis != 0 && self.fuel_per_lap != 0.0 {
             let laps = self.race_length.as_millis() / best_millis as u128;
             debug!(
@@ -119,7 +139,7 @@ impl SetupManager {
                 .round() as i32;
             self.race_fuel = fuel;
         }
-        
+
         if !self.qualifying_length.is_zero() && best_millis != 0 && self.fuel_per_lap != 0.0 {
             let laps = self.qualifying_length.as_millis() / best_millis as u128;
             debug!(
@@ -138,11 +158,11 @@ impl SetupManager {
     pub fn save_fuel(&mut self) {
         self.adj_setups
             .iter_mut()
-            .for_each(|setup| {
-                match setup.setup_type {
-                    super::SetupType::Qualifying => setup.basic_setup.strategy.fuel = self.qualifying_fuel,
-                    _ => setup.basic_setup.strategy.fuel = self.race_fuel,
+            .for_each(|setup| match setup.setup_type {
+                super::SetupType::Qualifying => {
+                    setup.basic_setup.strategy.fuel = self.qualifying_fuel
                 }
+                _ => setup.basic_setup.strategy.fuel = self.race_fuel,
             })
     }
 
@@ -193,11 +213,11 @@ impl SetupManager {
                         RaceSessionType::Qualifying => {
                             manager.qualifying_length = duration;
                             manager.calculate_fuel();
-                        },
+                        }
                         RaceSessionType::Race => {
                             manager.race_length = duration;
                             manager.calculate_fuel();
-                        },
+                        }
                         _ => (),
                     }
                 }
@@ -210,7 +230,7 @@ impl SetupManager {
                 SetupChange::LapTime(lap_time) => {
                     debug!("got average lap time: {lap_time:?}");
                     let mut manager = setup_manager.write();
-                    manager.best_lap = lap_time;
+                    manager.avg_lap = lap_time;
                     manager.calculate_fuel();
                 }
                 SetupChange::ReserveLaps(laps) => {
