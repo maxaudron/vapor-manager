@@ -12,7 +12,7 @@ pub struct SetupMeta {
 impl SetupMeta {
     pub fn read(path: &Path) -> Self {
         let mut path = path.to_owned();
-        path.push("meta.json");
+        path.push("meta.json.vapor");
         let data = std::fs::read_to_string(path).unwrap_or_default();
         serde_json::from_str(&data).unwrap_or_default()
     }
@@ -23,7 +23,7 @@ impl SetupMeta {
         }
 
         let mut path = path.to_owned();
-        path.push("meta.json");
+        path.push("meta.json.vapor");
         let file = std::fs::File::create(path).unwrap();
         serde_json::to_writer_pretty(file, self).unwrap()
     }
