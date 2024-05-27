@@ -33,6 +33,17 @@ pub fn Base() -> Element {
                                 "Home"
                             }
                         }
+                        li {
+                            Link {
+                                class: if (route == Route::Setups {}) {
+                                    "btn btn-active-primary"
+                                } else {
+                                    "btn bg-base border-base"
+                                },
+                                to: Route::Setups {},
+                                "Setups"
+                            }
+                        }
                         DebugLink { route: route.clone() }
                     }
                 }
@@ -84,10 +95,18 @@ pub fn Home() -> Element {
     rsx! {
         div { class: "grid grid-cols-[auto_max-content] gap-2",
             Laps {}
-            div { class: "grid grid-rows-[max-content_1fr] gap-2",
-                FuelCalculator {}
-                SetupView {}
-            }
+            div { class: "grid grid-rows-[max-content_1fr] gap-2", FuelCalculator {} }
+        }
+    }
+}
+
+
+#[component]
+pub fn Setups() -> Element {
+    rsx! {
+        div { class: "grid grid-cols-[auto_max-content] gap-2",
+            SetupView {}
+            div { class: "grid grid-rows-[max-content_1fr] gap-2", FuelCalculator {} }
         }
     }
 }

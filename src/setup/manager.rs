@@ -87,8 +87,8 @@ impl SetupManager {
             car: car.to_owned(),
             setup_folder,
             template_setup_folder,
-            qualifying_length: Duration::from_secs(15 * 60),
             avg_lap: meta.avg_lap,
+            qualifying_length: Default::default(),
             race_length: Default::default(),
             fuel_per_lap: Default::default(),
             race_fuel: Default::default(),
@@ -160,9 +160,15 @@ impl SetupManager {
             .iter_mut()
             .for_each(|setup| match setup.setup_type {
                 super::SetupType::Qualifying => {
-                    setup.basic_setup.strategy.fuel = self.qualifying_fuel
+                    if self.qualifying_fuel > 0 {
+                        setup.basic_setup.strategy.fuel = self.qualifying_fuel
+                    }
                 }
-                _ => setup.basic_setup.strategy.fuel = self.race_fuel,
+                _ => {
+                    if self.race_fuel > 0 {
+                        setup.basic_setup.strategy.fuel = self.race_fuel
+                    }
+                }
             })
     }
 

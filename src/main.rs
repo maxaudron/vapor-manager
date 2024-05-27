@@ -5,7 +5,10 @@
 use std::time::Duration;
 
 use dioxus::{
-    desktop::{Config, LogicalSize, WindowBuilder},
+    desktop::{
+        tao::{platform::windows::IconExtWindows, window::Icon},
+        Config, LogicalSize, WindowBuilder,
+    },
     prelude::*,
 };
 use futures_util::stream::StreamExt;
@@ -19,7 +22,7 @@ pub mod telemetry;
 pub mod components;
 
 use components::{
-    base::{Base, Home},
+    base::{Base, Home, Setups},
     debug::Debug,
     settings::Settings,
 };
@@ -75,6 +78,8 @@ enum Route {
     #[layout(Base)]
         #[route("/")]
         Home {},
+        #[route("/setups")]
+        Setups {},
         #[route("/settings")]
         Settings {},
         #[route("/debug")]
@@ -96,7 +101,6 @@ fn main() {
 
     #[cfg(windows)]
     {
-
         let mut documents =
             known_folders::get_known_folder_path(known_folders::KnownFolder::Documents).unwrap();
         documents.push(PROGRAM_NAME);
@@ -104,18 +108,23 @@ fn main() {
         config = config.with_data_directory(documents)
     }
 
+    let bin: &[u8] = include_bytes!("../icons/icon.bin");
+    let rgba = Icon::from_rgba(bin.to_owned(), 460, 460).expect("image parse failed");
+
     #[cfg(not(debug_assertions))]
     let config = config.with_menu(None);
     let size = LogicalSize::new(1250, 800);
     LaunchBuilder::desktop()
         .with_cfg(
-            config.with_window(
-                WindowBuilder::new()
-                    .with_resizable(true)
-                    .with_inner_size(size)
-                    .with_min_inner_size(size)
-                    .with_title(PROGRAM_NAME),
-            ),
+            config
+                .with_window(
+                    WindowBuilder::new()
+                        .with_resizable(true)
+                        .with_inner_size(size)
+                        .with_min_inner_size(size)
+                        .with_title(PROGRAM_NAME),
+                )
+                .with_icon(rgba),
         )
         .launch(App);
 }

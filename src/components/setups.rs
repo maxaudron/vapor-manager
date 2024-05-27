@@ -8,30 +8,16 @@ pub fn SetupView() -> Element {
     let setup_manager = setup_manager.read();
 
     rsx! {
-        div { class: "grid grid-rows-[min-content_auto] bg-base p-2 rounded-lg shadow-lg",
+        div { class: "grid grid-rows-[min-content_auto] p-2 bg-base rounded-lg shadow-lg",
             div { class: "grid grid-cols-1",
                 h1 { class: "text-xl pb-2 justify-self-center", "Setups" }
             }
             { if !setup_manager.setups.is_empty() {
-                rsx! { div { class: "grid grid-rows-[min-content_1fr_min-content_1fr] overflow-y-auto",
-                    h1 { class: "text-md pb-2", "Templates" }
-                    div { class: "grid auto-rows-min",
-                        { setup_manager.setups.iter().map(|setup| { rsx! {
-                            SetupSmall {
-                                name: "{setup.name}",
-                                setup_type: setup.setup_type,
-                                air_temp: setup.air_temperature,
-                                track_temp: setup.road_temperature,
-                                fuel: setup.basic_setup.strategy.fuel
-                            }
-                        }})}
-                    }
-                    h1 { class: "text-md py-2", "Adjusted" }
-                    div { class: "grid auto-rows-min",
-                        if setup_manager.adj_setups.is_empty() {
-                            span { class: "loading loading-ring loading-lg justify-self-center self-center" }
-                        } else {{
-                            setup_manager.adj_setups.iter().map(|setup| { rsx! {
+                rsx! { div { class: "grid grid-cols-2 gap-4 overflow-y-auto",
+                    div {
+                        h1 { class: "text-md pb-2", "Templates" }
+                        div { class: "grid auto-rows-min gap-2",
+                            { setup_manager.setups.iter().map(|setup| { rsx! {
                                 SetupSmall {
                                     name: "{setup.name}",
                                     setup_type: setup.setup_type,
@@ -39,8 +25,26 @@ pub fn SetupView() -> Element {
                                     track_temp: setup.road_temperature,
                                     fuel: setup.basic_setup.strategy.fuel
                                 }
-                            }})
-                        }}
+                            }})}
+                        }
+                    }
+                    div {
+                        h1 { class: "text-md pb-2", "Adjusted" }
+                        div { class: "grid auto-rows-min gap-2",
+                            if setup_manager.adj_setups.is_empty() {
+                                span { class: "loading loading-ring loading-lg justify-self-center self-center" }
+                            } else {{
+                                setup_manager.adj_setups.iter().map(|setup| { rsx! {
+                                    SetupSmall {
+                                        name: "{setup.name}",
+                                        setup_type: setup.setup_type,
+                                        air_temp: setup.air_temperature,
+                                        track_temp: setup.road_temperature,
+                                        fuel: setup.basic_setup.strategy.fuel
+                                    }
+                                }})
+                            }}
+                        }
                     }
                 }}
             } else {
@@ -55,24 +59,30 @@ pub fn SetupView() -> Element {
 }
 
 #[component]
-pub fn SetupSmall(name: String, setup_type: SetupType, air_temp: u8, track_temp: u8, fuel: i32) -> Element {
+pub fn SetupSmall(
+    name: String,
+    setup_type: SetupType,
+    air_temp: u8,
+    track_temp: u8,
+    fuel: i32,
+) -> Element {
     rsx! {
         div { class: "grid grid-rows-[min-content_min-content] bg-surface0 rounded-md p-2",
             div {
                 "{name}"
                 { match setup_type {
                     SetupType::Base => rsx! {
-                        div { class: "ml-2 badge bg-grey text-white", 
-                            "BASE"
+                        div { class: "ml-2 badge bg-grey text-white",
+                            "B"
                         }
                     },
                     SetupType::Race => rsx! {
-                        div { class: "ml-2 badge bg-green text-black", 
+                        div { class: "ml-2 badge bg-green text-black",
                             "R"
                         }
                     },
                     SetupType::Qualifying => rsx! {
-                        div { class: "ml-2 badge bg-yellow text-black", 
+                        div { class: "ml-2 badge bg-yellow text-black",
                             "Q"
                         }
                     },
