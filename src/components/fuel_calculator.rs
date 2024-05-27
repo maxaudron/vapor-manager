@@ -66,11 +66,11 @@ pub fn FuelCalculator() -> Element {
                                     .send(
                                         SetupChange::SessionLength((
                                             RaceSessionType::Qualifying,
-                                            Duration::from_secs(25 * 60),
+                                            Duration::from_secs(5 * 60),
                                         )),
                                     )
                             },
-                            "25 mins"
+                            "5 mins"
                         }
                     }
                     li {
@@ -81,11 +81,11 @@ pub fn FuelCalculator() -> Element {
                                     .send(
                                         SetupChange::SessionLength((
                                             RaceSessionType::Qualifying,
-                                            Duration::from_secs(45 * 60),
+                                            Duration::from_secs(10 * 60),
                                         )),
                                     )
                             },
-                            "45 mins"
+                            "10 mins"
                         }
                     }
                     li {
@@ -96,11 +96,11 @@ pub fn FuelCalculator() -> Element {
                                     .send(
                                         SetupChange::SessionLength((
                                             RaceSessionType::Qualifying,
-                                            Duration::from_secs(65 * 60),
+                                            Duration::from_secs(15 * 60),
                                         )),
                                     )
                             },
-                            "65 mins"
+                            "15 mins"
                         }
                     }
                 }
