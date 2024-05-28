@@ -54,7 +54,9 @@ impl Drop for SetupManager {
             avg_lap: self.avg_lap.clone(),
         };
 
-        meta.save(&self.template_setup_folder);
+        if self.template_setup_folder != PathBuf::default() {
+            meta.save(&self.template_setup_folder);
+        }
     }
 }
 
