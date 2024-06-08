@@ -82,7 +82,7 @@ impl Setup {
             .tyres
             .tyre_pressure
             .iter_mut()
-            .for_each(|i| *i += -diff as i32);
+            .for_each(|i| *i += diff as i32);
         self.basic_setup
             .strategy
             .pit_strategy
