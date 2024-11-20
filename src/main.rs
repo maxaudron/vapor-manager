@@ -5,16 +5,18 @@
 use std::time::Duration;
 
 use dioxus::{
-    desktop::{
-        tao::{platform::windows::IconExtWindows, window::Icon},
-        Config, LogicalSize, WindowBuilder,
-    },
+    desktop::{tao::window::Icon, Config, LogicalSize, WindowBuilder},
     prelude::*,
 };
+
+#[cfg(windows)]
+use dioxus::desktop::tao::platform::windows::IconExtWindows;
+
 use futures_util::stream::StreamExt;
 
 use telemetry::{broadcast::LapTimeData, LapWheels, SessionType};
 
+mod actors;
 pub mod setup;
 pub mod telemetry;
 
@@ -39,7 +41,8 @@ use crate::{
 
 pub static PROGRAM_NAME: &'static str = "Vapor Manager";
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, actix::Message)]
+#[rtype(result = "()")]
 pub enum StateChange {
     Weather(Weather),
     TrackName(String),
@@ -114,6 +117,7 @@ fn main() {
     #[cfg(not(debug_assertions))]
     let config = config.with_menu(None);
     let size = LogicalSize::new(1250, 800);
+
     LaunchBuilder::desktop()
         .with_cfg(
             config
@@ -131,15 +135,36 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    //
+    // Settings
     let theme = use_context_provider(|| Signal::new(Theme::Mocha));
     let settings: Signal<Settings> = use_context_provider(|| Signal::new(Settings::init(theme)));
 
+    let act = use_coroutine(|_rx: UnboundedReceiver<SetupChange>| async move {
+        // let handle = std::thread::spawn(|| {
+        //     let system = actix::System::new();
+        //     let _addr = system.block_on(async move {
+        //         use actix::prelude::*;
+        //         let router = crate::actors::Router::create(|ctx| {
+        //             let telemetry = crate::actors::telemetry::Telemetry::new(ctx.address());
+        //             crate::actors::Router::new(telemetry)
+        //         });
+        //     });
+        //     system.run().unwrap()
+        // });
+        // handle.join().unwrap();
+    });
+
+    //
+    // Broadcast Debugging impl for any system that are not windows
     #[cfg(any(not(windows), feature = "debugger"))]
     #[cfg(debug_assertions)]
     let _broadcast_debugger = use_coroutine(|rx| async move {
         telemetry::broadcast::BroadcastDebugger::coroutine(rx).await;
     });
 
+    //
+    // Setup Manager
     let setup_state: Signal<SetupManager> =
         use_context_provider(|| Signal::new(SetupManager::default()));
     let setup_manager: Coroutine<SetupChange> = use_coroutine(|rx| async move {
@@ -147,7 +172,11 @@ fn App() -> Element {
         SetupManager::coroutine(rx, setup_state, settings).await;
     });
 
+    // Broadcast channel
     let (broadcast_tx, mut broadcast_rx) = futures_channel::mpsc::unbounded();
+
+    //
+    // Application logic loop
     let broadcast_tx_2 = broadcast_tx.clone();
     let state = use_context_provider(|| Signal::new(State::default()));
     let state_manager: Coroutine<StateChange> = use_coroutine(|mut rx| async move {
@@ -212,6 +241,8 @@ fn App() -> Element {
         }
     });
 
+    //
+    // Windows Memory shim telemetry loop
     let state_manager_tx = state_manager.tx();
     let setup_manager_tx = setup_manager.tx();
     use_hook(move || {
@@ -221,6 +252,8 @@ fn App() -> Element {
         });
     });
 
+    //
+    // Broadcast API UDP loop
     let state_manager_tx = state_manager.tx();
     let setup_manager_tx = setup_manager.tx();
     let _broadcast: Coroutine<BroadcastMsg> = use_coroutine(move |_| async move {

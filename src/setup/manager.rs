@@ -16,6 +16,8 @@ pub type Track = String;
 pub type FuelPerLap = f32;
 pub type BestLap = LapTime;
 
+#[derive(Debug, actix::Message)]
+#[rtype(result = "()")]
 pub enum SetupChange {
     Weather(Weather),
     SessionLength((RaceSessionType, Duration)),
