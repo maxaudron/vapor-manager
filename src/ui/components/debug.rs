@@ -7,11 +7,12 @@ use crate::{
     setup::SetupManager,
     telemetry::{
         broadcast::{
-            BroadcastInboundMessage, LapTimeData, LapType, RaceSessionType, RealtimeUpdate, SessionPhase, TrackData
+            BroadcastInboundMessage, LapType, RaceSessionType, RealtimeUpdate, SessionPhase,
+            TrackData,
         },
         AvgMinMax, LapWheels, Wheels,
     },
-    State, StateChange,
+    StateChange,
 };
 
 #[component]

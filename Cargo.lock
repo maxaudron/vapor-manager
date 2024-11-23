@@ -4391,6 +4391,7 @@ version = "1.0.2"
 dependencies = [
  "actix",
  "dioxus",
+ "futures",
  "futures-channel",
  "futures-util",
  "known-folders",
@@ -4403,6 +4404,7 @@ dependencies = [
  "strum",
  "thiserror",
  "tokio",
+ "tokio-util",
  "tracing",
  "tracing-subscriber",
  "windows 0.54.0",

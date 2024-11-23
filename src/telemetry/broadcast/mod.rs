@@ -1,11 +1,16 @@
 use nom::{
-    bytes::complete::take,
-    number::complete::{le_u16, u8},
+    bytes::streaming::take,
+    number::streaming::{le_u16, u8},
     IResult,
 };
+use num_enum::FromPrimitive;
 
-mod runtime;
-pub use runtime::*;
+// mod runtime;
+// pub use runtime::*;
+
+mod framed;
+pub use framed::{BroadcastCodec, FramedError};
+
 #[cfg(debug_assertions)]
 mod debugger;
 #[cfg(debug_assertions)]
@@ -24,13 +29,12 @@ pub use broadcasting_event::*;
 pub use data::*;
 pub use entrylist::*;
 pub use lapinfo::*;
-use num_enum::FromPrimitive;
 pub use realtime_car_update::*;
 pub use realtime_update::*;
+pub use registration::*;
 pub use track_data::*;
 
-use self::registration::RegistrationResult;
-
+#[derive(Debug, Clone)]
 pub enum BroadcastInboundMessage {
     RegistrationResult(RegistrationResult),
     RealtimeUpdate(RealtimeUpdate),
@@ -39,6 +43,15 @@ pub enum BroadcastInboundMessage {
     EntryListCar(CarInfo),
     TrackData(TrackData),
     BroadcastingEvent(BroadcastingEvent),
+}
+
+#[derive(Debug, actix::Message)]
+#[rtype(result = "()")]
+pub enum BroadcastOutboundMessage {
+    RegisterCommandApplication(RegisterConnection),
+    UnregisterCommandApplication,
+    RequestEntryList(RequestEntryList),
+    RequestTrackData(RequestTrackData),
 }
 
 #[repr(u8)]

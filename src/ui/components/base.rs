@@ -1,11 +1,11 @@
 use dioxus::prelude::*;
 
 use crate::{
-    components::{
-        fuel_calculator::FuelCalculator, laps::Laps, setups::SetupView, status_bar::StatusBar,
-        theme::Theme,
+    ui::{
+        components::{StatusBar, Theme},
+        Route,
     },
-    Route,
+    Weather,
 };
 
 #[component]
@@ -14,6 +14,9 @@ pub fn Base() -> Element {
 
     let theme = use_context::<Signal<Theme>>();
     let theme_lower = format!("{theme:?}").to_lowercase();
+
+    let track_name = use_signal(|| "Test");
+    let weather = use_signal(|| Weather::default());
 
     rsx! {
         div {
@@ -44,10 +47,10 @@ pub fn Base() -> Element {
                                 "Setups"
                             }
                         }
-                        DebugLink { route: route.clone() }
+                        // DebugLink { route: route.clone() }
                     }
                 }
-                StatusBar {}
+                StatusBar { connected: true, track_name, track_temp: weather.read().track_temp }
                 div { class: "justify-self-end",
                     ul { class: "menu menu-horizontal gap-2 p-0",
                         li {
@@ -69,44 +72,43 @@ pub fn Base() -> Element {
     }
 }
 
-#[component]
-fn DebugLink(route: Route) -> Element {
-    #[cfg(debug_assertions)]
-    rsx! {
-        li {
-            Link {
-                class: if (route == Route::Debug {}) {
-                    "btn btn-active-primary"
-                } else {
-                    "btn bg-base border-base"
-                },
-                to: Route::Debug {},
-                "Debug"
-            }
-        }
-    }
+// #[component]
+// fn DebugLink(route: Route) -> Element {
+//     #[cfg(debug_assertions)]
+//     rsx! {
+//         li {
+//             Link {
+//                 class: if (route == Route::Debug {}) {
+//                     "btn btn-active-primary"
+//                 } else {
+//                     "btn bg-base border-base"
+//                 },
+//                 to: Route::Debug {},
+//                 "Debug"
+//             }
+//         }
+//     }
 
-    #[cfg(not(debug_assertions))]
-    rsx! {  }
-}
+//     #[cfg(not(debug_assertions))]
+//     rsx! {}
+// }
 
 #[component]
 pub fn Home() -> Element {
     rsx! {
         div { class: "grid grid-cols-[auto_max-content] gap-2",
-            Laps {}
-            div { class: "grid grid-rows-[max-content_1fr] gap-2", FuelCalculator {} }
+            // Laps {}
+            // div { class: "grid grid-rows-[max-content_1fr] gap-2", FuelCalculator {} }
         }
     }
 }
-
 
 #[component]
 pub fn Setups() -> Element {
     rsx! {
         div { class: "grid grid-cols-[auto_max-content] gap-2",
-            SetupView {}
-            div { class: "grid grid-rows-[max-content_1fr] gap-2", FuelCalculator {} }
+            // SetupView {}
+            // div { class: "grid grid-rows-[max-content_1fr] gap-2", FuelCalculator {} }
         }
     }
 }

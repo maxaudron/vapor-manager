@@ -32,15 +32,6 @@ pub enum BroadcastMsg {
     Aborted,
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct LapTimeData {
-    pub number: i32,
-    pub sectors: Vec<LapTime>,
-    pub time: LapTime,
-    pub valid: bool,
-    pub lap_type: LapType,
-}
-
 impl BroadcastState {
     pub fn new(
         state_tx: UnboundedSender<StateChange>,

@@ -4,9 +4,10 @@ use std::{path::PathBuf, time::Duration};
 use tracing::{debug, error};
 
 use crate::{
-    components::settings::Settings,
+    // components::settings::Settings,
     telemetry::{broadcast::RaceSessionType, LapTime},
-    Weather, PROGRAM_NAME,
+    Weather,
+    PROGRAM_NAME,
 };
 
 use super::{Setup, SetupError, SetupMeta};
@@ -186,70 +187,70 @@ impl SetupManager {
             .for_each(|s| s.save(&self.setup_folder))
     }
 
-    pub async fn coroutine(
-        mut rx: UnboundedReceiver<SetupChange>,
-        mut setup_manager: Signal<SetupManager>,
-        settings: Signal<Settings>,
-    ) {
-        while let Some(msg) = rx.next().await {
-            match msg {
-                SetupChange::Weather(weather) => {
-                    debug!("got weather {weather:?}");
-                    let mut manager = setup_manager.write();
-                    manager.adjust_pressure(weather.ambient_temp, weather.track_temp);
-                    manager.store()
-                }
-                SetupChange::Load((car, track)) => {
-                    let mut manager = SetupManager::new(&track, &car);
-                    match manager.discover() {
-                        Ok(_) => (),
-                        Err(e) => {
-                            error!("failed discovering setups: {:?}", e)
-                        }
-                    }
+    // pub async fn coroutine(
+    //     mut rx: UnboundedReceiver<SetupChange>,
+    //     mut setup_manager: Signal<SetupManager>,
+    //     settings: Signal<Settings>,
+    // ) {
+    //     while let Some(msg) = rx.next().await {
+    //         match msg {
+    //             SetupChange::Weather(weather) => {
+    //                 debug!("got weather {weather:?}");
+    //                 let mut manager = setup_manager.write();
+    //                 manager.adjust_pressure(weather.ambient_temp, weather.track_temp);
+    //                 manager.store()
+    //             }
+    //             SetupChange::Load((car, track)) => {
+    //                 let mut manager = SetupManager::new(&track, &car);
+    //                 match manager.discover() {
+    //                     Ok(_) => (),
+    //                     Err(e) => {
+    //                         error!("failed discovering setups: {:?}", e)
+    //                     }
+    //                 }
 
-                    debug!(
-                        "got initial reserve laps: {:?}",
-                        settings.read().reserve_laps
-                    );
-                    manager.reserve_laps = settings.read().reserve_laps;
+    //                 debug!(
+    //                     "got initial reserve laps: {:?}",
+    //                     settings.read().reserve_laps
+    //                 );
+    //                 manager.reserve_laps = settings.read().reserve_laps;
 
-                    setup_manager.set(manager);
-                }
-                SetupChange::SessionLength((session_type, duration)) => {
-                    debug!("got session length {duration:?}");
-                    let mut manager = setup_manager.write();
-                    match session_type {
-                        RaceSessionType::Qualifying => {
-                            manager.qualifying_length = duration;
-                            manager.calculate_fuel();
-                        }
-                        RaceSessionType::Race => {
-                            manager.race_length = duration;
-                            manager.calculate_fuel();
-                        }
-                        _ => (),
-                    }
-                }
-                SetupChange::FuelPerLap(fuel_per_lap) => {
-                    debug!("got fuel_per_lap {fuel_per_lap}");
-                    let mut manager = setup_manager.write();
-                    manager.fuel_per_lap = fuel_per_lap;
-                    manager.calculate_fuel();
-                }
-                SetupChange::LapTime(lap_time) => {
-                    debug!("got average lap time: {lap_time:?}");
-                    let mut manager = setup_manager.write();
-                    manager.avg_lap = lap_time;
-                    manager.calculate_fuel();
-                }
-                SetupChange::ReserveLaps(laps) => {
-                    debug!("got reserve laps: {laps}");
-                    let mut manager = setup_manager.write();
-                    manager.reserve_laps = laps;
-                    manager.calculate_fuel();
-                }
-            }
-        }
-    }
+    //                 setup_manager.set(manager);
+    //             }
+    //             SetupChange::SessionLength((session_type, duration)) => {
+    //                 debug!("got session length {duration:?}");
+    //                 let mut manager = setup_manager.write();
+    //                 match session_type {
+    //                     RaceSessionType::Qualifying => {
+    //                         manager.qualifying_length = duration;
+    //                         manager.calculate_fuel();
+    //                     }
+    //                     RaceSessionType::Race => {
+    //                         manager.race_length = duration;
+    //                         manager.calculate_fuel();
+    //                     }
+    //                     _ => (),
+    //                 }
+    //             }
+    //             SetupChange::FuelPerLap(fuel_per_lap) => {
+    //                 debug!("got fuel_per_lap {fuel_per_lap}");
+    //                 let mut manager = setup_manager.write();
+    //                 manager.fuel_per_lap = fuel_per_lap;
+    //                 manager.calculate_fuel();
+    //             }
+    //             SetupChange::LapTime(lap_time) => {
+    //                 debug!("got average lap time: {lap_time:?}");
+    //                 let mut manager = setup_manager.write();
+    //                 manager.avg_lap = lap_time;
+    //                 manager.calculate_fuel();
+    //             }
+    //             SetupChange::ReserveLaps(laps) => {
+    //                 debug!("got reserve laps: {laps}");
+    //                 let mut manager = setup_manager.write();
+    //                 manager.reserve_laps = laps;
+    //                 manager.calculate_fuel();
+    //             }
+    //         }
+    //     }
+    // }
 }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use nom::{
-    number::complete::{le_i32, u8},
+    number::streaming::{le_i32, u8},
     sequence::tuple,
 };
 use serde::{Deserialize, Serialize};

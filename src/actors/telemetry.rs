@@ -1,13 +1,13 @@
 use std::time::Duration;
 
 use actix::prelude::*;
-use tracing::debug;
+use tracing::{debug, error, warn};
 
 use crate::{
     setup,
     telemetry::{
         self, Graphics, LapHistory, PageFileGraphics, PageFilePhysics, PageFileStatic, Physics,
-        SharedMemoryPage, StaticData, TelemetryError,
+        SharedMemoryPage, StaticData, Status, TelemetryError,
     },
     StateChange,
 };
@@ -17,6 +17,7 @@ use super::Router;
 pub struct Telemetry {
     interval: SpawnHandle,
     router: Addr<Router>,
+    connected: bool,
 
     pub static_data: StaticData,
     pub physics: Physics,
@@ -31,25 +32,13 @@ impl Telemetry {
         Self {
             router,
             interval: Default::default(),
+            connected: Default::default(),
             static_data: Default::default(),
             physics: Default::default(),
             graphics: Default::default(),
             lap_history: Default::default(),
             lap_result: Default::default(),
         }
-    }
-
-    /// Read initial values from memory shim
-    fn connect(&mut self) -> Result<bool, TelemetryError> {
-        let graphics_data = PageFileGraphics::get_reference()?;
-        let physics_data = PageFilePhysics::get_reference()?;
-        let static_data = PageFileStatic::get_reference()?;
-
-        self.static_data = StaticData::from(*static_data);
-        self.physics = Physics::from(*physics_data);
-        self.graphics = Graphics::from(*graphics_data);
-
-        Ok(graphics_data.status.data != 0)
     }
 
     /// Commit the update to data to be used in the next round
@@ -85,11 +74,12 @@ impl Telemetry {
 
 /// Change Computation
 impl Telemetry {
-    fn game_state(&self, update: &TelemetryUpdate) {
+    fn game_state(&self, update: &TelemetryUpdate, ctx: &mut <Telemetry as Actor>::Context) {
         if update.graphics.status != self.graphics.status {
             match update.graphics.status {
                 telemetry::Status::Off | telemetry::Status::Replay => {
-                    self.router.do_send(super::ShmGameState::Disconnected)
+                    self.router.do_send(super::ShmGameState::Disconnected);
+                    ctx.terminate()
                 }
                 telemetry::Status::Live | telemetry::Status::Pause => {
                     self.router.do_send(super::ShmGameState::Connected)
@@ -112,8 +102,6 @@ impl Telemetry {
     }
 
     fn update(&mut self, update: TelemetryUpdate) {
-        self.game_state(&update);
-
         if let Some((_l_physics, l_graphics)) = self.lap_history.last_point() {
             if l_graphics.completed_laps < self.graphics.completed_laps {
                 // changed fuel usage per lap
@@ -145,18 +133,28 @@ impl Actor for Telemetry {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         debug!("telemetry started");
-        match self.connect() {
-            Ok(_) => (),
-            Err(_) => ctx.terminate(),
-        }
 
-        self.interval = ctx.run_interval(Duration::from_millis(16), |telemetry, ctx| {
-            debug!("telemetry tick");
-            match Telemetry::get_update() {
-                Ok(update) => telemetry.update(update),
-                Err(_) => ctx.terminate(),
-            }
-        });
+        self.interval =
+            ctx.run_interval(
+                Duration::from_millis(16),
+                |telemetry, ctx| match Telemetry::get_update() {
+                    Ok(update) => {
+                        telemetry.game_state(&update, ctx);
+                        telemetry.update(update);
+                    }
+                    Err(error) => {
+                        // This triggers a shmdisconnect to the router, which triggers the disconnect
+                        //  for the broadcast API, so to prevent it from running these commands all the
+                        //  time we put it behind a gate.
+                        // `connected` is also false by default, so this will not run until we connected
+                        //  to the game at least once.
+                        if telemetry.connected {
+                            error!("could not connect to telemetry: {:?}", error);
+                            telemetry.router.do_send(super::ShmGameState::Disconnected);
+                        };
+                    }
+                },
+            );
     }
 
     fn stopped(&mut self, ctx: &mut Self::Context) {

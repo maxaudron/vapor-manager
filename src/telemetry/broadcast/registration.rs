@@ -1,5 +1,5 @@
 use nom::{
-    number::complete::{le_i32, u8},
+    number::streaming::{le_i32, u8},
     sequence::tuple,
     IResult,
 };
@@ -38,7 +38,13 @@ impl BroadcastNetworkProtocolOutbound for RegisterConnection {
     fn deserialize(input: &[u8]) -> IResult<&[u8], Self> {
         let (
             input,
-            (_protocol_version, display_name, connection_password, ms_realtime_update_interval, command_password),
+            (
+                _protocol_version,
+                display_name,
+                connection_password,
+                ms_realtime_update_interval,
+                command_password,
+            ),
         ) = tuple((u8, read_string, read_string, le_i32, read_string))(input)?;
 
         Ok((

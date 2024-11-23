@@ -1,5 +1,5 @@
 use nom::{
-    number::complete::{le_i32, le_u16, u8},
+    number::streaming::{le_i32, le_u16, u8},
     sequence::tuple,
     IResult,
 };

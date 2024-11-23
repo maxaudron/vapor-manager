@@ -1,5 +1,5 @@
 use nom::{
-    number::complete::{le_f32, le_i32, le_u16, u8},
+    number::streaming::{le_f32, le_i32, le_u16, u8},
     sequence::tuple,
 };
 use num_enum::FromPrimitive;
