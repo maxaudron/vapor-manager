@@ -6,8 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dioxus = { version = "0.5", features = ["desktop", "router"] }
-manganis = "0.2"
+dioxus = { version = "=0.6.0-alpha.5", features = ["desktop", "router"] }
 futures = "0.3"
 futures-util = "0.3"
 futures-channel = "0.3"

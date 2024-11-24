@@ -1,8 +1,9 @@
-use components::{Base, Home, Settings, Setups, Theme};
+use components::{Base, Home, Settings, SettingsComponent, Setups};
 use dioxus::{
     desktop::{tao::window::Icon, Config, LogicalSize, WindowBuilder},
     prelude::*,
 };
+use document::Stylesheet;
 
 use crate::PROGRAM_NAME;
 
@@ -17,15 +18,13 @@ enum Route {
         #[route("/setups")]
         Setups {},
         #[route("/settings")]
-        Settings {},
+        SettingsComponent {},
         // #[route("/debug")]
         // #[cfg(debug_assertions)]
         // Debug {},
 }
 
 pub fn launch(router: actix::Addr<crate::actors::Router>) -> () {
-    const _TAILWIND_URL: &str = manganis::mg!(file("public\\tailwind.css"));
-
     let mut config = Config::new().with_disable_context_menu(true);
 
     #[cfg(windows)]
@@ -63,10 +62,12 @@ pub fn launch(router: actix::Addr<crate::actors::Router>) -> () {
 fn App() -> Element {
     //
     // Settings
-    let theme = use_context_provider(|| Signal::new(Theme::Mocha));
-    let settings: Signal<Settings> = use_context_provider(|| Signal::new(Settings::init(theme)));
+    let settings: Signal<Settings> = use_context_provider(|| Signal::new(Settings::init()));
+
+    const TAILWIND_URL: Asset = asset!("/public/tailwind.css");
 
     rsx! {
+        Stylesheet { href: TAILWIND_URL }
         Router::<Route> {}
     }
 }

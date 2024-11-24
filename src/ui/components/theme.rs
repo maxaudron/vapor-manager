@@ -4,6 +4,8 @@ use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 
+use crate::ui::components::Settings;
+
 #[derive(
     Clone,
     Default,
@@ -26,18 +28,18 @@ pub enum Theme {
 }
 
 #[component]
-pub fn ThemeSwitcher(mut theme: Signal<Theme>) -> Element {
-    let active_theme = *theme.read();
+pub fn ThemeSwitcher() -> Element {
+    let mut settings: Signal<Settings> = use_context();
     rsx! {
         select {
             class: "select select-bordered",
             oninput: move |event| {
-                *theme.write() = Theme::from_str(&event.value()).unwrap();
+                settings.write().theme = Theme::from_str(&event.value()).unwrap();
             },
             {
                 Theme::iter().map(|t| {
                     rsx! {
-                        option { class: "p-2", selected: t == active_theme, "{t}" }
+                        option { class: "p-2", selected: t == settings.read().theme, "{t}" }
                     }
                 })
             }

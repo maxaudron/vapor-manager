@@ -64,7 +64,7 @@ impl Settings {
         Ok(())
     }
 
-    pub fn init(mut theme: Signal<Theme>) -> Settings {
+    pub fn init() -> Settings {
         let settings = match Settings::load() {
             Ok(settings) => settings,
             Err(e) => {
@@ -73,18 +73,14 @@ impl Settings {
             }
         };
 
-        debug!("setting theme from settings: {:?}", theme);
-        *theme.write() = settings.theme;
-
         settings
     }
 }
 
 #[component]
-pub fn Settings() -> Element {
-    let theme: Signal<Theme> = use_context();
+pub fn SettingsComponent() -> Element {
     let mut settings: Signal<Settings> = use_context();
-    let setup_manager_tx = use_coroutine_handle::<SetupChange>();
+    // let setup_manager_tx = use_coroutine_handle::<SetupChange>();
 
     let telemetry_laps = use_signal(|| settings.read().telemetry_laps);
     let reserve_laps = use_signal(|| settings.read().reserve_laps);
@@ -95,15 +91,9 @@ pub fn Settings() -> Element {
         }
     });
     use_effect(move || {
-        if !theme.read().eq(&settings.read().theme) {
-            debug!("use_effect setting theme: {:?}", theme);
-            settings.write().theme = *theme.read()
-        }
-    });
-    use_effect(move || {
         if settings.read().reserve_laps != reserve_laps() {
             debug!("changed reserve laps: {:?}", reserve_laps);
-            setup_manager_tx.send(SetupChange::ReserveLaps(reserve_laps()));
+            // setup_manager_tx.send(SetupChange::ReserveLaps(reserve_laps()));
             settings.write().reserve_laps = reserve_laps();
         }
     });
@@ -114,7 +104,7 @@ pub fn Settings() -> Element {
                 h1 { class: "text-xl", "App" }
                 div { class: "label bg-surface0 rounded-md h-min px-2 pr-4",
                     span { class: "text-lg pl-8 label-text text-nowrap", "Theme" }
-                    ThemeSwitcher { theme }
+                    ThemeSwitcher { }
                 }
             }
             div { class: "grid auto-rows-min gap-2",

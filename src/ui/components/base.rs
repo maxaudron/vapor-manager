@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 
 use crate::{
     ui::{
-        components::{StatusBar, Theme},
+        components::{Settings, StatusBar},
         Route,
     },
     Weather,
@@ -12,7 +12,8 @@ use crate::{
 pub fn Base() -> Element {
     let route = use_route::<Route>();
 
-    let theme = use_context::<Signal<Theme>>();
+    let settings = use_context::<Signal<Settings>>();
+    let theme = settings.read().theme;
     let theme_lower = format!("{theme:?}").to_lowercase();
 
     let track_name = use_signal(|| "Test");
@@ -55,12 +56,12 @@ pub fn Base() -> Element {
                     ul { class: "menu menu-horizontal gap-2 p-0",
                         li {
                             Link {
-                                class: if (route == Route::Settings {}) {
+                                class: if (route == Route::SettingsComponent {}) {
                                     "btn btn-active-primary"
                                 } else {
                                     "btn bg-base border-base"
                                 },
-                                to: Route::Settings {},
+                                to: Route::SettingsComponent {},
                                 "Settings"
                             }
                         }
