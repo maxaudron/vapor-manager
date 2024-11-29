@@ -82,7 +82,6 @@ impl Telemetry {
                     if self.connected {
                         self.connected = false;
                         self.router.do_send(super::ShmGameState::Disconnected);
-                        ctx.terminate()
                     }
                 }
                 telemetry::Status::Live | telemetry::Status::Pause => {

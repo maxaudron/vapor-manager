@@ -158,9 +158,12 @@ impl StreamHandler<Result<(BroadcastInboundMessage, SocketAddr), FramedError>> f
                             .do_send(BroadcastOutboundMessage::RequestTrackData(
                                 RequestTrackData::new(self.id),
                             ));
+
+                        self.router.do_send(UiUpdate::SessionLive(true));
+                        self.router.do_send(UiUpdate::LapReset);
                     } else {
                         error!("failed to register to broadcast api: {:?}", r.err_msg);
-                        // self.router.send(BroadcastDisconnected);
+                        self.router.do_send(UiUpdate::SessionLive(false));
                     };
                 }
                 BroadcastInboundMessage::RealtimeUpdate(d) => {
@@ -190,7 +193,6 @@ impl Broadcast {
             self.session_info.name = update.name.clone();
             self.router
                 .do_send(UiUpdate::TrackName(update.name.clone()));
-            self.router.do_send(UiUpdate::SessionLive(true));
         }
     }
     fn update_weather(&mut self, update: &RealtimeUpdate) {
