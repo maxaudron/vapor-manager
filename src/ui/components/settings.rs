@@ -6,7 +6,6 @@ use thiserror::Error;
 use tracing::{debug, error};
 
 use crate::{
-    setup::SetupChange,
     ui::components::{InputNumber, ThemeSwitcher},
     PROGRAM_NAME,
 };

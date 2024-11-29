@@ -5,7 +5,13 @@ use dioxus::{
 };
 use document::Stylesheet;
 
-use crate::PROGRAM_NAME;
+use crate::{
+    actors::{
+        ui::{SessionInfo, UiState},
+        ClientManagement,
+    },
+    PROGRAM_NAME,
+};
 
 mod components;
 
@@ -24,7 +30,7 @@ enum Route {
         // Debug {},
 }
 
-pub fn launch(router: actix::Addr<crate::actors::Router>) -> () {
+pub fn launch() -> () {
     let mut config = Config::new().with_disable_context_menu(true);
 
     #[cfg(windows)]
@@ -58,16 +64,31 @@ pub fn launch(router: actix::Addr<crate::actors::Router>) -> () {
         .launch(App);
 }
 
+type Backend = actix::Addr<crate::actors::Router>;
+
 #[component]
 fn App() -> Element {
     //
     // Settings
     let settings: Signal<Settings> = use_context_provider(|| Signal::new(Settings::init()));
 
-    const TAILWIND_URL: Asset = asset!("/public/tailwind.css");
+    // Initialize blank session states
+    let track_info: SyncSignal<SessionInfo> =
+        use_context_provider(|| SyncSignal::new_maybe_sync(SessionInfo::default()));
+    let laps: SyncSignal<crate::actors::ui::Laps> =
+        use_context_provider(|| SyncSignal::new_maybe_sync(crate::actors::ui::Laps::default()));
+
+    // Initialize Main Arbiter & Background processes
+    let arbiter = actix::Arbiter::new();
+    let router = crate::actors::Router::initialize(arbiter.handle());
+    let router = use_context_provider(|| router);
+
+    // Initialize Main UI State and add client to backend
+    let ui_state = UiState::initialize(router.clone(), track_info.clone(), laps.clone());
+    router.do_send(ClientManagement::Add(ui_state));
 
     rsx! {
-        Stylesheet { href: TAILWIND_URL }
+        Stylesheet { href: asset!("/public/tailwind.css") }
         Router::<Route> {}
     }
 }

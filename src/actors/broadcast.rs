@@ -1,4 +1,7 @@
-use std::net::{Ipv4Addr, SocketAddr};
+use std::{
+    net::{Ipv4Addr, SocketAddr},
+    time::Duration,
+};
 
 use actix::prelude::*;
 use futures::stream::SplitSink;
@@ -9,14 +12,18 @@ use tokio_util::udp::UdpFramed;
 use tracing::{debug, error, instrument, trace};
 
 use crate::{
+    actors::ui::{LapTimeData, UiUpdate},
     telemetry::broadcast::{
         BroadcastCodec, BroadcastInboundMessage, BroadcastOutboundMessage, FramedError,
-        RegisterConnection, RequestTrackData,
+        RealtimeCarUpdate, RealtimeUpdate, RegisterConnection, RequestTrackData, TrackData,
     },
-    StateChange, PROGRAM_NAME,
+    PROGRAM_NAME,
 };
 
-use super::{Router, ShmGameState};
+use super::{
+    ui::{SessionInfo, Weather},
+    Router, ShmGameState,
+};
 
 pub struct Broadcast {
     id: i32,
@@ -27,6 +34,12 @@ pub struct Broadcast {
             SplitSink<UdpFramed<BroadcastCodec>, (BroadcastOutboundMessage, SocketAddr)>,
         >,
     >,
+
+    session_info: SessionInfo,
+
+    track_data: TrackData,
+    realtime_update: RealtimeUpdate,
+    realtime_car_update: RealtimeCarUpdate,
 }
 
 impl Broadcast {
@@ -35,6 +48,10 @@ impl Broadcast {
             router,
             sink: None,
             id: 0,
+            session_info: Default::default(),
+            track_data: Default::default(),
+            realtime_update: Default::default(),
+            realtime_car_update: Default::default(),
         }
     }
 }
@@ -146,16 +163,83 @@ impl StreamHandler<Result<(BroadcastInboundMessage, SocketAddr), FramedError>> f
                         // self.router.send(BroadcastDisconnected);
                     };
                 }
-                BroadcastInboundMessage::RealtimeUpdate(_) => (),
-                BroadcastInboundMessage::RealtimeCarUpdate(_) => (),
+                BroadcastInboundMessage::RealtimeUpdate(d) => {
+                    self.update_weather(&d);
+                    self.update_time(&d);
+
+                    self.realtime_update = d;
+                }
+                BroadcastInboundMessage::RealtimeCarUpdate(update) => self.update_laps(update),
                 BroadcastInboundMessage::EntryList(_) => (),
                 BroadcastInboundMessage::EntryListCar(_) => (),
                 BroadcastInboundMessage::TrackData(d) => {
-                    self.router.do_send(StateChange::TrackName(d.name));
+                    self.update_track_name(&d);
+
+                    self.track_data = d;
                 }
                 BroadcastInboundMessage::BroadcastingEvent(_) => (),
             },
             Err(e) => error!("got framed error: {:?}", e),
         };
+    }
+}
+
+impl Broadcast {
+    fn update_track_name(&mut self, update: &TrackData) {
+        if self.track_data.name != update.name {
+            self.session_info.name = update.name.clone();
+            self.router
+                .do_send(UiUpdate::TrackName(update.name.clone()));
+            self.router.do_send(UiUpdate::SessionLive(true));
+        }
+    }
+    fn update_weather(&mut self, update: &RealtimeUpdate) {
+        if self.realtime_update.ambient_temp != update.ambient_temp
+            || self.realtime_update.track_temp != update.track_temp
+            || self.realtime_update.clouds != update.clouds
+            || self.realtime_update.rain_level != update.rain_level
+            || self.realtime_update.wetness != update.wetness
+        {
+            self.session_info.weather = Weather {
+                ambient_temp: update.ambient_temp,
+                track_temp: update.track_temp,
+                clouds: update.clouds,
+                rain_level: update.rain_level,
+                wetness: update.wetness,
+            };
+
+            self.router
+                .do_send(UiUpdate::Weather(self.session_info.weather));
+        }
+    }
+
+    fn update_time(&mut self, update: &RealtimeUpdate) {
+        if self.realtime_update.session_time != update.session_time {
+            self.realtime_update.session_time = update.session_time;
+        }
+    }
+
+    fn update_laps(&mut self, update: RealtimeCarUpdate) {
+        if self.realtime_car_update.laps != update.laps {
+            debug!("laps: {:?}", update.laps);
+            self.realtime_car_update.laps = update.laps;
+
+            if update.laps >= 1 {
+                let last = update.last_lap;
+
+                self.router.do_send(UiUpdate::LapTime(LapTimeData {
+                    number: update.laps as i32,
+                    sectors: last
+                        .splits
+                        .iter()
+                        .filter_map(|s| *s)
+                        .map(|s| Duration::from_millis(s as u64).into())
+                        .collect(),
+                    lap_type: last.lap_type,
+                    time: Duration::from_millis(last.laptime.unwrap() as u64).into(),
+                    valid: !last.invalid,
+                }));
+            }
+        }
     }
 }

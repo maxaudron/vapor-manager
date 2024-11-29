@@ -1,16 +1,20 @@
 use dioxus::prelude::*;
 
+use crate::actors::ui::SessionInfo;
+
 #[component]
-pub fn StatusBar(connected: bool, track_name: String, track_temp: u8) -> Element {
-    if connected {
+pub fn StatusBar(connected: bool) -> Element {
+    let info: SyncSignal<SessionInfo> = use_context();
+
+    if info.read().live {
         rsx! {
             div { class: "grid grid-cols-2 bg-base px-4 py-2 rounded-lg content-center",
                 div { class: "justify-self-start",
-                    div { "{track_name}" }
+                    div { "{info.read().name}" }
                 }
                 div { class: "grid grid-cols-2 justify-self-end gap-4",
-                    // div { "{state.weather.ambient_temp} C" }
-                    div { "{track_temp} C" }
+                    div { "{info.read().weather.ambient_temp} C" }
+                    div { "{info.read().weather.track_temp} C" }
                 }
             }
         }

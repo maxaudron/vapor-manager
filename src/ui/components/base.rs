@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 
 use crate::{
     ui::{
-        components::{Settings, StatusBar},
+        components::{laps::Laps, Settings, StatusBar},
         Route,
     },
     Weather,
@@ -51,7 +51,7 @@ pub fn Base() -> Element {
                         // DebugLink { route: route.clone() }
                     }
                 }
-                StatusBar { connected: true, track_name, track_temp: weather.read().track_temp }
+                StatusBar { connected: true, }
                 div { class: "justify-self-end",
                     ul { class: "menu menu-horizontal gap-2 p-0",
                         li {
@@ -98,7 +98,7 @@ pub fn Base() -> Element {
 pub fn Home() -> Element {
     rsx! {
         div { class: "grid grid-cols-[auto_max-content] gap-2",
-            // Laps {}
+            Laps {}
             // div { class: "grid grid-rows-[max-content_1fr] gap-2", FuelCalculator {} }
         }
     }

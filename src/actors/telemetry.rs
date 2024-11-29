@@ -4,6 +4,7 @@ use actix::prelude::*;
 use tracing::{debug, error, warn};
 
 use crate::{
+    actors::ui::{UiState, UiUpdate},
     setup,
     telemetry::{
         self, Graphics, LapHistory, PageFileGraphics, PageFilePhysics, PageFileStatic, Physics,
@@ -46,15 +47,15 @@ impl Telemetry {
         self.static_data = update.static_data;
 
         if update.graphics.packet_id > self.graphics.packet_id {
-            self.graphics = update.graphics;
-            self.lap_history.h_graphics.push(self.graphics.clone());
+            self.graphics = update.graphics.clone();
+            self.lap_history.h_graphics.push(update.graphics);
         }
 
         // TODO this might be causing the problems with the repeated lap times
         // what happens when this number reaches it's max?
         if update.physics.packet_id > self.physics.packet_id {
-            self.physics = update.physics;
-            self.lap_history.h_physics.push(self.physics.clone());
+            self.physics = update.physics.clone();
+            self.lap_history.h_physics.push(update.physics);
         }
     }
 
@@ -74,15 +75,21 @@ impl Telemetry {
 
 /// Change Computation
 impl Telemetry {
-    fn game_state(&self, update: &TelemetryUpdate, ctx: &mut <Telemetry as Actor>::Context) {
+    fn game_state(&mut self, update: &TelemetryUpdate, ctx: &mut <Telemetry as Actor>::Context) {
         if update.graphics.status != self.graphics.status {
             match update.graphics.status {
                 telemetry::Status::Off | telemetry::Status::Replay => {
-                    self.router.do_send(super::ShmGameState::Disconnected);
-                    ctx.terminate()
+                    if self.connected {
+                        self.connected = false;
+                        self.router.do_send(super::ShmGameState::Disconnected);
+                        ctx.terminate()
+                    }
                 }
                 telemetry::Status::Live | telemetry::Status::Pause => {
-                    self.router.do_send(super::ShmGameState::Connected)
+                    if !self.connected {
+                        self.connected = true;
+                        self.router.do_send(super::ShmGameState::Connected)
+                    }
                 }
             }
         }
@@ -91,21 +98,19 @@ impl Telemetry {
     /// Compute lap results and reset history struct
     fn lap_history(&mut self) {
         self.lap_result.get_avg_min_max(&self.lap_history);
-        self.lap_result.number = self.graphics.completed_laps;
-
-        debug!("finished lap: {:?}", self.lap_result);
+        self.lap_result.number = self.graphics.completed_laps + 1;
 
         self.router
-            .do_send(StateChange::LapWheels(std::mem::take(&mut self.lap_result)));
+            .do_send(UiUpdate::LapWheels(std::mem::take(&mut self.lap_result)));
 
         self.lap_history = LapHistory::default();
     }
 
     fn update(&mut self, update: TelemetryUpdate) {
         if let Some((_l_physics, l_graphics)) = self.lap_history.last_point() {
-            if l_graphics.completed_laps < self.graphics.completed_laps {
+            if l_graphics.completed_laps < update.graphics.completed_laps {
                 // changed fuel usage per lap
-                if l_graphics.fuel_used_per_lap != self.graphics.fuel_used_per_lap {
+                if l_graphics.fuel_used_per_lap != update.graphics.fuel_used_per_lap {
                     self.router.do_send(setup::SetupChange::FuelPerLap(
                         self.graphics.fuel_used_per_lap,
                     ));
