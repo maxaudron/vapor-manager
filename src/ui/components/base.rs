@@ -1,11 +1,8 @@
 use dioxus::prelude::*;
 
-use crate::{
-    ui::{
-        components::{laps::Laps, Settings, StatusBar},
-        Route,
-    },
-    Weather,
+use crate::ui::{
+    components::{laps::Laps, Settings, StatusBar},
+    Route,
 };
 
 #[component]
@@ -15,9 +12,6 @@ pub fn Base() -> Element {
     let settings = use_context::<Signal<Settings>>();
     let theme = settings.read().theme;
     let theme_lower = format!("{theme:?}").to_lowercase();
-
-    let track_name = use_signal(|| "Test");
-    let weather = use_signal(|| Weather::default());
 
     rsx! {
         div {

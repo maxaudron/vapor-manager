@@ -1,8 +1,6 @@
 use actix::prelude::*;
 use tracing::debug;
 
-use crate::setup::SetupChange;
-
 use super::{
     broadcast::Broadcast,
     telemetry::Telemetry,
@@ -10,6 +8,7 @@ use super::{
 };
 
 pub struct Router {
+    #[allow(unused)]
     telemetry: Addr<Telemetry>,
     broadcast: Addr<Broadcast>,
     clients: Vec<Addr<UiState>>,
@@ -71,14 +70,6 @@ impl Handler<ShmGameState> for Router {
     }
 }
 
-impl Handler<SetupChange> for Router {
-    type Result = ();
-
-    fn handle(&mut self, msg: SetupChange, _ctx: &mut Self::Context) -> Self::Result {
-        debug!(msg = ?msg)
-    }
-}
-
 impl Handler<UiUpdate> for Router {
     type Result = ();
 
@@ -106,5 +97,6 @@ impl Handler<ClientManagement> for Router {
 #[rtype(result = "()")]
 pub enum ClientManagement {
     Add(Addr<UiState>),
+    #[allow(unused)]
     Remove(Addr<UiState>),
 }

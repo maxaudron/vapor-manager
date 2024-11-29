@@ -2,11 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 #![allow(non_snake_case)]
 
-use actors::{ui::Weather, Router};
-use telemetry::{broadcast::LapType, LapTime, LapWheels, SessionType};
+use actors::ui::Weather;
+use telemetry::{broadcast::LapType, shm::SessionType, LapTime, LapWheels};
 
 mod actors;
-pub mod setup;
+// pub mod setup;
 pub mod telemetry;
 
 // mod widgets;
@@ -39,7 +39,6 @@ pub struct LapTimeData {
 }
 
 use actix::prelude::*;
-use tracing::debug;
 
 // #[actix::main]
 fn main() {
@@ -47,7 +46,7 @@ fn main() {
         .with_max_level(tracing::Level::DEBUG)
         .init();
 
-    let system = System::new();
+    let _system = System::new();
 
     ui::launch();
 }

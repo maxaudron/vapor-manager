@@ -11,6 +11,7 @@ use super::Router;
 #[derive(Debug, Clone, Message)]
 #[rtype(result = "()")]
 pub struct UiState {
+    #[allow(unused)]
     router: Addr<Router>,
     session_info: SyncSignal<SessionInfo>,
     laps: SyncSignal<Laps>,

@@ -64,13 +64,14 @@ pub fn launch() -> () {
         .launch(App);
 }
 
+#[allow(unused)]
 type Backend = actix::Addr<crate::actors::Router>;
 
 #[component]
 fn App() -> Element {
     //
     // Settings
-    let settings: Signal<Settings> = use_context_provider(|| Signal::new(Settings::init()));
+    let _settings: Signal<Settings> = use_context_provider(|| Signal::new(Settings::init()));
 
     // Initialize blank session states
     let track_info: SyncSignal<SessionInfo> =

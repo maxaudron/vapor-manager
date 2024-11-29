@@ -1,5 +1,5 @@
 use tokio_util::{
-    bytes::{Buf, BytesMut},
+    bytes::BytesMut,
     codec::{Decoder, Encoder},
 };
 

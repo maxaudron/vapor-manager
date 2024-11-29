@@ -1,7 +1,5 @@
-use dioxus::prelude::*;
-use futures_util::StreamExt;
 use std::{path::PathBuf, time::Duration};
-use tracing::{debug, error};
+use tracing::debug;
 
 use crate::{
     // components::settings::Settings,

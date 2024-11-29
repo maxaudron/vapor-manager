@@ -1,16 +1,18 @@
 use std::time::Duration;
 
 use actix::prelude::*;
-use tracing::{debug, error, warn};
+use tracing::{debug, error};
 
 use crate::{
-    actors::ui::{UiState, UiUpdate},
-    setup,
+    actors::ui::UiUpdate,
     telemetry::{
-        self, Graphics, LapHistory, PageFileGraphics, PageFilePhysics, PageFileStatic, Physics,
-        SharedMemoryPage, StaticData, Status, TelemetryError,
+        self,
+        shm::{
+            self, Graphics, LapHistory, PageFileGraphics, PageFilePhysics, PageFileStatic, Physics,
+            SharedMemoryPage, StaticData,
+        },
+        TelemetryError,
     },
-    StateChange,
 };
 
 use super::Router;
@@ -75,16 +77,16 @@ impl Telemetry {
 
 /// Change Computation
 impl Telemetry {
-    fn game_state(&mut self, update: &TelemetryUpdate, ctx: &mut <Telemetry as Actor>::Context) {
+    fn game_state(&mut self, update: &TelemetryUpdate, _ctx: &mut <Telemetry as Actor>::Context) {
         if update.graphics.status != self.graphics.status {
             match update.graphics.status {
-                telemetry::Status::Off | telemetry::Status::Replay => {
+                shm::Status::Off | shm::Status::Replay => {
                     if self.connected {
                         self.connected = false;
                         self.router.do_send(super::ShmGameState::Disconnected);
                     }
                 }
-                telemetry::Status::Live | telemetry::Status::Pause => {
+                shm::Status::Live | shm::Status::Pause => {
                     if !self.connected {
                         self.connected = true;
                         self.router.do_send(super::ShmGameState::Connected)
@@ -110,9 +112,10 @@ impl Telemetry {
             if l_graphics.completed_laps < update.graphics.completed_laps {
                 // changed fuel usage per lap
                 if l_graphics.fuel_used_per_lap != update.graphics.fuel_used_per_lap {
-                    self.router.do_send(setup::SetupChange::FuelPerLap(
-                        self.graphics.fuel_used_per_lap,
-                    ));
+                    // TODO
+                    // self.router.do_send(setup::SetupChange::FuelPerLap(
+                    //     self.graphics.fuel_used_per_lap,
+                    // ));
                 }
 
                 // Compute lap results and reset history structs

@@ -198,10 +198,3 @@ impl BroadcastNetworkProtocolOutbound for RequestTrackData {
         todo!()
     }
 }
-
-fn disconnect() -> Vec<u8> {
-    let mut out: Vec<u8> = Vec::new();
-    out.push(OutboundMessageTypes::UnregisterCommandApplication as u8);
-
-    out
-}

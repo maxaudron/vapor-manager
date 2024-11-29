@@ -21,6 +21,7 @@ impl Setup {
         let data = std::fs::read_to_string(path).unwrap();
         let mut setup: Setup = serde_json::from_str(&data).unwrap();
 
+        // TODO improve this to be more lax in parsing and guessing the air/track temperature
         // 21c 26c NAME
         // 012345678
         setup.air_temperature = (&name[0..2]).parse().unwrap();
@@ -34,7 +35,7 @@ impl Setup {
         } else {
             SetupType::Base
         };
-        
+
         setup.name = name;
 
         setup

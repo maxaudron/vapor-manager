@@ -15,11 +15,16 @@ use windows::{
     },
 };
 
+mod conversion;
+mod data;
 mod graphics;
+mod laphistory;
 mod physics;
 mod r#static;
 
+pub use data::*;
 pub use graphics::*;
+pub use laphistory::*;
 pub use physics::*;
 pub use r#static::*;
 
