@@ -78,6 +78,8 @@ fn App() -> Element {
         use_context_provider(|| SyncSignal::new_maybe_sync(SessionInfo::default()));
     let laps: SyncSignal<crate::actors::ui::Laps> =
         use_context_provider(|| SyncSignal::new_maybe_sync(crate::actors::ui::Laps::default()));
+    let setups: SyncSignal<crate::actors::ui::Setups> =
+        use_context_provider(|| SyncSignal::new_maybe_sync(crate::actors::ui::Setups::default()));
 
     // Initialize Main Arbiter & Background processes
     let arbiter = actix::Arbiter::new();
@@ -85,7 +87,12 @@ fn App() -> Element {
     let router = use_context_provider(|| router);
 
     // Initialize Main UI State and add client to backend
-    let ui_state = UiState::initialize(router.clone(), track_info.clone(), laps.clone());
+    let ui_state = UiState::initialize(
+        router.clone(),
+        track_info.clone(),
+        laps.clone(),
+        setups.clone(),
+    );
     router.do_send(ClientManagement::Add(ui_state));
 
     rsx! {

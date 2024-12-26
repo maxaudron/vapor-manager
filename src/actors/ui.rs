@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 use actix::prelude::*;
 use dioxus::signals::{SyncSignal, Writable};
@@ -6,7 +6,7 @@ use tracing::debug;
 
 use crate::telemetry::{broadcast::LapType, LapTime, LapWheels};
 
-use super::Router;
+use super::{setup_manager::SetupFile, Router};
 
 #[derive(Debug, Clone, Message)]
 #[rtype(result = "()")]
@@ -15,6 +15,7 @@ pub struct UiState {
     router: Addr<Router>,
     session_info: SyncSignal<SessionInfo>,
     laps: SyncSignal<Laps>,
+    setups: SyncSignal<Setups>,
 }
 
 impl Actor for UiState {
@@ -26,12 +27,14 @@ impl UiState {
         router: Addr<Router>,
         session_info: SyncSignal<SessionInfo>,
         laps: SyncSignal<Laps>,
+        setups: SyncSignal<Setups>,
     ) -> Addr<UiState> {
         let arb = Arbiter::new();
         let ui = UiState {
             router,
             session_info,
             laps,
+            setups,
         };
         UiState::start_in_arbiter(&arb.handle(), |_| ui)
     }
@@ -65,6 +68,8 @@ pub enum UiUpdate {
     LapTime(LapTimeData),
     LapWheels(LapWheels),
     LapReset,
+    SetupTemplates(HashMap<String, SetupFile>),
+    SetupAdjusted(HashMap<String, SetupFile>),
 }
 
 impl Handler<UiUpdate> for UiState {
@@ -80,6 +85,8 @@ impl Handler<UiUpdate> for UiState {
             UiUpdate::LapTime(time) => self.laps.write().times.push(time),
             UiUpdate::LapWheels(wheels) => self.laps.write().wheels.push(wheels),
             UiUpdate::LapReset => self.laps.write().reset(),
+            UiUpdate::SetupTemplates(setups) => self.setups.write().templates = setups,
+            UiUpdate::SetupAdjusted(setups) => self.setups.write().adjusted = setups,
         }
     }
 }
@@ -105,4 +112,11 @@ pub struct LapTimeData {
     pub time: LapTime,
     pub valid: bool,
     pub lap_type: LapType,
+}
+
+#[derive(Debug, Default, Clone, Message)]
+#[rtype(result = "()")]
+pub struct Setups {
+    pub templates: HashMap<String, SetupFile>,
+    pub adjusted: HashMap<String, SetupFile>,
 }

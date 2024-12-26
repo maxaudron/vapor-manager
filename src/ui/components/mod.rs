@@ -3,7 +3,7 @@ mod base;
 // pub mod fuel_calculator;
 pub mod laps;
 mod settings;
-// pub mod setups;
+pub mod setups;
 mod status_bar;
 mod theme;
 

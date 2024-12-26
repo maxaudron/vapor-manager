@@ -3,6 +3,7 @@ use tracing::debug;
 
 use super::{
     broadcast::Broadcast,
+    setup_manager::{SetupChange, SetupManager},
     telemetry::Telemetry,
     ui::{UiState, UiUpdate},
 };
@@ -11,6 +12,7 @@ pub struct Router {
     #[allow(unused)]
     telemetry: Addr<Telemetry>,
     broadcast: Addr<Broadcast>,
+    setup_manager: Addr<SetupManager>,
     clients: Vec<Addr<UiState>>,
 }
 
@@ -23,9 +25,12 @@ impl Router {
 
             let broadcast = Broadcast::new(ctx.address()).start();
 
+            let setup_manager = SetupManager::new(ctx.address()).start();
+
             Router {
                 telemetry,
                 broadcast,
+                setup_manager,
                 clients: Vec::new(),
             }
         })
@@ -76,6 +81,15 @@ impl Handler<UiUpdate> for Router {
     fn handle(&mut self, msg: UiUpdate, _ctx: &mut Self::Context) -> Self::Result {
         debug!(name = "sending msg to clients", msg = ?msg);
         self.send_clients(msg);
+    }
+}
+
+impl Handler<SetupChange> for Router {
+    type Result = ();
+
+    fn handle(&mut self, msg: SetupChange, _ctx: &mut Self::Context) -> Self::Result {
+        debug!(name = "sending msg to setup_manager", msg = ?msg);
+        self.setup_manager.do_send(msg);
     }
 }
 

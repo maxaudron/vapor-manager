@@ -1,29 +1,29 @@
 use dioxus::prelude::*;
 
-use crate::setup::{SetupManager, SetupType};
+use crate::actors::{setup_manager::SetupType, ui::Setups};
 
 #[component]
 pub fn SetupView() -> Element {
-    let setup_manager: Signal<SetupManager> = use_context();
-    let setup_manager = setup_manager.read();
+    let setups: SyncSignal<Setups> = use_context();
+    let setups = setups.read();
 
     rsx! {
         div { class: "grid grid-rows-[min-content_auto] p-2 bg-base rounded-lg shadow-lg",
             div { class: "grid grid-cols-1",
                 h1 { class: "text-xl pb-2 justify-self-center", "Setups" }
             }
-            { if !setup_manager.setups.is_empty() {
+            { if !setups.templates.is_empty() {
                 rsx! { div { class: "grid grid-cols-2 gap-4 overflow-y-auto",
                     div {
                         h1 { class: "text-md pb-2", "Templates" }
                         div { class: "grid auto-rows-min gap-2",
-                            { setup_manager.setups.iter().map(|setup| { rsx! {
+                            { setups.templates.iter().map(|(_name, setup)| { rsx! {
                                 SetupSmall {
                                     name: "{setup.name}",
                                     setup_type: setup.setup_type,
-                                    air_temp: setup.air_temperature,
-                                    track_temp: setup.road_temperature,
-                                    fuel: setup.basic_setup.strategy.fuel
+                                    ambient_temp: setup.ambient_temperature,
+                                    track_temp: setup.track_temperature,
+                                    fuel: setup.setup.basic_setup.strategy.fuel
                                 }
                             }})}
                         }
@@ -31,16 +31,16 @@ pub fn SetupView() -> Element {
                     div {
                         h1 { class: "text-md pb-2", "Adjusted" }
                         div { class: "grid auto-rows-min gap-2",
-                            if setup_manager.adj_setups.is_empty() {
+                            if setups.adjusted.is_empty() {
                                 span { class: "loading loading-ring loading-lg justify-self-center self-center" }
                             } else {{
-                                setup_manager.adj_setups.iter().map(|setup| { rsx! {
+                                setups.adjusted.iter().map(|(_name, setup)| { rsx! {
                                     SetupSmall {
                                         name: "{setup.name}",
                                         setup_type: setup.setup_type,
-                                        air_temp: setup.air_temperature,
-                                        track_temp: setup.road_temperature,
-                                        fuel: setup.basic_setup.strategy.fuel
+                                        ambient_temp: setup.ambient_temperature,
+                                        track_temp: setup.track_temperature,
+                                        fuel: setup.setup.basic_setup.strategy.fuel
                                     }
                                 }})
                             }}
@@ -62,7 +62,7 @@ pub fn SetupView() -> Element {
 pub fn SetupSmall(
     name: String,
     setup_type: SetupType,
-    air_temp: u8,
+    ambient_temp: u8,
     track_temp: u8,
     fuel: i32,
 ) -> Element {
@@ -96,7 +96,7 @@ pub fn SetupSmall(
                         "viewBox": "0 0 512 512",
                         path { d: "M288 32c0 17.7 14.3 32 32 32h32c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32 14.3-32 32s14.3 32 32 32H352c53 0 96-43 96-96s-43-96-96-96H320c-17.7 0-32 14.3-32 32zm64 352c0 17.7 14.3 32 32 32h32c53 0 96-43 96-96s-43-96-96-96H32c-17.7 0-32 14.3-32 32s14.3 32 32 32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H384c-17.7 0-32 14.3-32 32zM128 512h32c53 0 96-43 96-96s-43-96-96-96H32c-17.7 0-32 14.3-32 32s14.3 32 32 32H160c17.7 0 32 14.3 32 32s-14.3 32-32 32H128c-17.7 0-32 14.3-32 32s14.3 32 32 32z" }
                     }
-                    "{air_temp} C"
+                    "{ambient_temp} C"
                 }
                 div { class: "badge bg-zinc-900 text-white ml-2",
                     svg {

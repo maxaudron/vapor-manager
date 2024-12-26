@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::ui::{
-    components::{laps::Laps, Settings, StatusBar},
+    components::{laps::Laps, setups::SetupView, Settings, StatusBar},
     Route,
 };
 
@@ -102,7 +102,7 @@ pub fn Home() -> Element {
 pub fn Setups() -> Element {
     rsx! {
         div { class: "grid grid-cols-[auto_max-content] gap-2",
-            // SetupView {}
+            SetupView {}
             // div { class: "grid grid-rows-[max-content_1fr] gap-2", FuelCalculator {} }
         }
     }

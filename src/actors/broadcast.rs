@@ -21,6 +21,7 @@ use crate::{
 };
 
 use super::{
+    setup_manager::SetupChange,
     ui::{SessionInfo, Weather},
     Router, ShmGameState,
 };
@@ -212,6 +213,8 @@ impl Broadcast {
 
             self.router
                 .do_send(UiUpdate::Weather(self.session_info.weather));
+            self.router
+                .do_send(SetupChange::Weather(self.session_info.weather));
         }
     }
 

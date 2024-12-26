@@ -15,7 +15,7 @@ use crate::{
     },
 };
 
-use super::Router;
+use super::{setup_manager::SetupChange, Router};
 
 pub struct Telemetry {
     interval: SpawnHandle,
@@ -89,7 +89,11 @@ impl Telemetry {
                 shm::Status::Live | shm::Status::Pause => {
                     if !self.connected {
                         self.connected = true;
-                        self.router.do_send(super::ShmGameState::Connected)
+                        self.router.do_send(super::ShmGameState::Connected);
+                        self.router.do_send(SetupChange::Load(
+                            update.static_data.car_model.clone(),
+                            update.static_data.track.clone(),
+                        ));
                     }
                 }
             }
