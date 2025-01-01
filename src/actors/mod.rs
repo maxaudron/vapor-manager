@@ -1,4 +1,5 @@
 pub mod broadcast;
+pub mod fuel_calculator;
 pub mod router;
 pub mod setup_manager;
 pub mod telemetry;

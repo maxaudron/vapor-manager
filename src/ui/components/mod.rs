@@ -1,6 +1,6 @@
 mod base;
 // mod debug;
-// pub mod fuel_calculator;
+pub mod fuel_calculator;
 pub mod laps;
 mod settings;
 pub mod setups;

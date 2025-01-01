@@ -1,7 +1,9 @@
 use dioxus::prelude::*;
 
 use crate::ui::{
-    components::{laps::Laps, setups::SetupView, Settings, StatusBar},
+    components::{
+        fuel_calculator::FuelCalculator, laps::Laps, setups::SetupView, Settings, StatusBar,
+    },
     Route,
 };
 
@@ -93,7 +95,7 @@ pub fn Home() -> Element {
     rsx! {
         div { class: "grid grid-cols-[auto_max-content] gap-2",
             Laps {}
-            // div { class: "grid grid-rows-[max-content_1fr] gap-2", FuelCalculator {} }
+            div { class: "grid grid-rows-[max-content_1fr] gap-2", FuelCalculator {} }
         }
     }
 }
@@ -103,7 +105,7 @@ pub fn Setups() -> Element {
     rsx! {
         div { class: "grid grid-cols-[auto_max-content] gap-2",
             SetupView {}
-            // div { class: "grid grid-rows-[max-content_1fr] gap-2", FuelCalculator {} }
+            div { class: "grid grid-rows-[max-content_1fr] gap-2", FuelCalculator {} }
         }
     }
 }

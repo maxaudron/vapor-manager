@@ -1,23 +1,30 @@
 use std::time::Duration;
 
+use actix::prelude::*;
 use dioxus::prelude::*;
 
-use crate::{
-    setup::{SetupChange, SetupManager},
-    telemetry::broadcast::RaceSessionType,
-};
+use futures_util::StreamExt;
+
+use crate::actors::fuel_calculator::{FuelData, FuelMessage};
 
 #[component]
 pub fn FuelCalculator() -> Element {
-    let setup_manager: Signal<SetupManager> = use_context();
-    let setup_manager_tx = use_coroutine_handle::<SetupChange>();
+    let fuel_data: SyncSignal<FuelData> = use_context();
+
+    let tx = use_coroutine(|mut rx: UnboundedReceiver<FuelMessage>| async move {
+        let router: Addr<crate::actors::Router> = use_context();
+        // Wait for data on the service
+        while let Some(msg) = rx.next().await {
+            router.do_send(msg);
+        }
+    });
 
     rsx! {
         div { class: "grid auto-rows-min bg-base rounded-lg shadow-lg",
             div { class: "label px-0 py-2 border-b-[1px] border-crust",
                 span { class: "label-text text-nowrap px-4", "Fuel/Lap" }
-                { if setup_manager.read().fuel_per_lap > 0.0 {
-                    rsx! { span { class: "label-text text-nowrap px-4", "{setup_manager.read().fuel_per_lap:.2} l" } }
+                { if fuel_data.read().fuel_per_lap > 0.0 {
+                    rsx! { span { class: "label-text text-nowrap px-4", "{fuel_data.read().fuel_per_lap:.2} l" } }
                 } else {
                     rsx! { span { class: "label-text text-nowrap px-4 text-red", "Drive Lap" } }
                 }
@@ -25,8 +32,8 @@ pub fn FuelCalculator() -> Element {
             }
             div { class: "label px-0 py-2 border-b-[1px] border-crust",
                 span { class: "label-text text-nowrap px-4", "Avg Lap" }
-                { if setup_manager.read().avg_lap.duration().as_millis() > 0 {
-                    rsx! { span { class: "label-text text-nowrap px-4", "{setup_manager.read().avg_lap}" } }
+                { if fuel_data.read().avg_lap_time.duration().as_millis() > 0 {
+                    rsx! { span { class: "label-text text-nowrap px-4", "{fuel_data.read().avg_lap_time}" } }
                 } else {
                     rsx! { span { class: "label-text text-nowrap px-4 text-red", "Drive Lap" } }
                 }
@@ -42,15 +49,14 @@ pub fn FuelCalculator() -> Element {
                         min: "0",
                         max: "{u64::MAX}",
                         step: "1",
-                        value: "{setup_manager.read().qualifying_length.as_secs() / 60}",
+                        value: "{fuel_data.read().quali_length.as_secs() / 60}",
                         oninput: move |event| {
                             if event.value() != "" {
-                                setup_manager_tx
+                                tx
                                     .send(
-                                        SetupChange::SessionLength((
-                                            RaceSessionType::Qualifying,
+                                        FuelMessage::QualiLength(
                                             Duration::from_secs(event.value().parse::<u64>().unwrap() * 60),
-                                        )),
+                                        ),
                                     )
                             }
                         }
@@ -62,12 +68,11 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx
+                                tx
                                     .send(
-                                        SetupChange::SessionLength((
-                                            RaceSessionType::Qualifying,
+                                        FuelMessage::QualiLength(
                                             Duration::from_secs(5 * 60),
-                                        )),
+                                        ),
                                     )
                             },
                             "5 mins"
@@ -77,12 +82,11 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx
+                                tx
                                     .send(
-                                        SetupChange::SessionLength((
-                                            RaceSessionType::Qualifying,
+                                        FuelMessage::QualiLength(
                                             Duration::from_secs(10 * 60),
-                                        )),
+                                        ),
                                     )
                             },
                             "10 mins"
@@ -92,12 +96,11 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx
+                                tx
                                     .send(
-                                        SetupChange::SessionLength((
-                                            RaceSessionType::Qualifying,
+                                        FuelMessage::QualiLength(
                                             Duration::from_secs(15 * 60),
-                                        )),
+                                        ),
                                     )
                             },
                             "15 mins"
@@ -115,15 +118,14 @@ pub fn FuelCalculator() -> Element {
                         min: "0",
                         max: "{u64::MAX}",
                         step: "1",
-                        value: "{setup_manager.read().race_length.as_secs() / 60}",
+                        value: "{fuel_data.read().race_length.as_secs() / 60}",
                         oninput: move |event| {
                             if event.value() != "" {
-                                setup_manager_tx
+                                tx
                                     .send(
-                                        SetupChange::SessionLength((
-                                            RaceSessionType::Race,
+                                        FuelMessage::RaceLength(
                                             Duration::from_secs(event.value().parse::<u64>().unwrap() * 60),
-                                        )),
+                                        ),
                                     )
                             }
                         }
@@ -135,12 +137,11 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx
+                                tx
                                     .send(
-                                        SetupChange::SessionLength((
-                                            RaceSessionType::Race,
+                                        FuelMessage::RaceLength(
                                             Duration::from_secs(25 * 60),
-                                        )),
+                                        ),
                                     )
                             },
                             "25 mins"
@@ -150,12 +151,11 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx
+                                tx
                                     .send(
-                                        SetupChange::SessionLength((
-                                            RaceSessionType::Race,
+                                        FuelMessage::RaceLength(
                                             Duration::from_secs(45 * 60),
-                                        )),
+                                        ),
                                     )
                             },
                             "45 mins"
@@ -165,12 +165,11 @@ pub fn FuelCalculator() -> Element {
                         button {
                             class: "btn btn-sm",
                             onclick: move |_| {
-                                setup_manager_tx
+                                tx
                                     .send(
-                                        SetupChange::SessionLength((
-                                            RaceSessionType::Race,
+                                        FuelMessage::RaceLength(
                                             Duration::from_secs(65 * 60),
-                                        )),
+                                        ),
                                     )
                             },
                             "65 mins"
@@ -180,8 +179,8 @@ pub fn FuelCalculator() -> Element {
             }
             div { class: "label p-0 pt-2 pb-1",
                 span { class: "label-text text-nowrap px-4", "Race Fuel" }
-                { if setup_manager.read().race_fuel > 0 {
-                    rsx! { span { class: "label-text text-nowrap text-green px-4", "{setup_manager.read().race_fuel} l" } }
+                { if fuel_data.read().race_fuel > 0 {
+                    rsx! { span { class: "label-text text-nowrap text-green px-4", "{fuel_data.read().race_fuel} l" } }
                 } else {
                     rsx! { span { class: "label-text text-nowrap px-4 text-red", "Enter Duration" } }
                 }
@@ -189,8 +188,8 @@ pub fn FuelCalculator() -> Element {
             }
             div { class: "label p-0 pb-2 pt-1",
                 span { class: "label-text text-nowrap px-4", "Quali Fuel" }
-                { if setup_manager.read().race_fuel > 0 {
-                    rsx! { span { class: "label-text text-nowrap text-green px-4", "{setup_manager.read().qualifying_fuel} l" } }
+                { if fuel_data.read().quali_fuel > 0 {
+                    rsx! { span { class: "label-text text-nowrap text-green px-4", "{fuel_data.read().quali_fuel} l" } }
                 } else {
                     rsx! { span { class: "label-text text-nowrap px-4 text-red", "Enter Duration" } }
                 }
@@ -199,12 +198,12 @@ pub fn FuelCalculator() -> Element {
             div { class: "label p-0",
                 span { class: "label-text text-nowrap p-4 pt-0", "Reserve Fuel" }
                 span { class: "label-text text-nowrap text-green p-4 pt-0",
-                    "{setup_manager.read().reserve_laps} Laps"
+                    "{fuel_data.read().reserve_laps} Laps"
                 }
-                { if setup_manager.read().reserve_fuel_l > 0.0 {
-                    rsx! { span { class: "label-text text-nowrap text-green p-4 pt-0", "{setup_manager.read().reserve_fuel_l:.1} l" } }
+                { if fuel_data.read().reserve_fuel > 0 {
+                    rsx! { span { class: "label-text text-nowrap text-green p-4 pt-0", "{fuel_data.read().reserve_fuel} l" } }
                 } else {
-                    rsx! { span { class: "label-text text-nowrap p-4 pt-0 text-red", "0.0 l" } }
+                    rsx! { span { class: "label-text text-nowrap p-4 pt-0 text-red", "0 l" } }
                 }
                 }
             }

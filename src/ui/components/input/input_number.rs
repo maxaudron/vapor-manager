@@ -56,6 +56,8 @@ where
                     max: "{max}",
                     step: "1",
                     value: "{value}",
+                    // TODO this ain't it chief
+                    // manual number entry doesn't apply min and max values
                     oninput: move |event| {
                         if event.value() != "" {
                             value.set(event.value().parse::<T>().unwrap());

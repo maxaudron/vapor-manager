@@ -1,11 +1,13 @@
 use std::{io, path::PathBuf};
 
+use actix::Addr;
 use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::{debug, error};
 
 use crate::{
+    actors::{fuel_calculator::FuelMessage, setup_manager::SetupChange},
     ui::components::{InputNumber, ThemeSwitcher},
     PROGRAM_NAME,
 };
@@ -84,17 +86,16 @@ pub fn SettingsComponent() -> Element {
     let telemetry_laps = use_signal(|| settings.read().telemetry_laps);
     let reserve_laps = use_signal(|| settings.read().reserve_laps);
     use_effect(move || {
-        if settings.read().telemetry_laps != telemetry_laps() {
-            debug!("changed laps: {:?}", telemetry_laps);
-            settings.write().telemetry_laps = telemetry_laps();
-        }
+        let router: Addr<crate::actors::Router> = use_context();
+        debug!("changed laps: {:?}", telemetry_laps);
+        router.do_send(SetupChange::TelemetryLaps(telemetry_laps()));
+        settings.write().telemetry_laps = telemetry_laps();
     });
     use_effect(move || {
-        if settings.read().reserve_laps != reserve_laps() {
-            debug!("changed reserve laps: {:?}", reserve_laps);
-            // setup_manager_tx.send(SetupChange::ReserveLaps(reserve_laps()));
-            settings.write().reserve_laps = reserve_laps();
-        }
+        let router: Addr<crate::actors::Router> = use_context();
+        debug!("changed reserve laps: {:?}", reserve_laps);
+        router.do_send(FuelMessage::ReserveLaps(reserve_laps()));
+        settings.write().reserve_laps = reserve_laps();
     });
 
     rsx! {

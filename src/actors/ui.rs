@@ -6,7 +6,7 @@ use tracing::debug;
 
 use crate::telemetry::{broadcast::LapType, LapTime, LapWheels};
 
-use super::{setup_manager::SetupFile, Router};
+use super::{fuel_calculator::FuelData, setup_manager::SetupFile, Reset, Router};
 
 #[derive(Debug, Clone, Message)]
 #[rtype(result = "()")]
@@ -16,6 +16,7 @@ pub struct UiState {
     session_info: SyncSignal<SessionInfo>,
     laps: SyncSignal<Laps>,
     setups: SyncSignal<Setups>,
+    fuel_data: SyncSignal<FuelData>,
 }
 
 impl Actor for UiState {
@@ -28,6 +29,7 @@ impl UiState {
         session_info: SyncSignal<SessionInfo>,
         laps: SyncSignal<Laps>,
         setups: SyncSignal<Setups>,
+        fuel_data: SyncSignal<FuelData>,
     ) -> Addr<UiState> {
         let arb = Arbiter::new();
         let ui = UiState {
@@ -35,6 +37,7 @@ impl UiState {
             session_info,
             laps,
             setups,
+            fuel_data,
         };
         UiState::start_in_arbiter(&arb.handle(), |_| ui)
     }
@@ -67,9 +70,9 @@ pub enum UiUpdate {
     SessionLive(bool),
     LapTime(LapTimeData),
     LapWheels(LapWheels),
-    LapReset,
     SetupTemplates(HashMap<String, SetupFile>),
     SetupAdjusted(HashMap<String, SetupFile>),
+    FuelData(FuelData),
 }
 
 impl Handler<UiUpdate> for UiState {
@@ -84,9 +87,9 @@ impl Handler<UiUpdate> for UiState {
             UiUpdate::SessionLive(live) => self.session_info.write().live = live,
             UiUpdate::LapTime(time) => self.laps.write().times.push(time),
             UiUpdate::LapWheels(wheels) => self.laps.write().wheels.push(wheels),
-            UiUpdate::LapReset => self.laps.write().reset(),
             UiUpdate::SetupTemplates(setups) => self.setups.write().templates = setups,
             UiUpdate::SetupAdjusted(setups) => self.setups.write().adjusted = setups,
+            UiUpdate::FuelData(fuel) => self.fuel_data.write().replace(fuel),
         }
     }
 }
@@ -119,4 +122,12 @@ pub struct LapTimeData {
 pub struct Setups {
     pub templates: HashMap<String, SetupFile>,
     pub adjusted: HashMap<String, SetupFile>,
+}
+
+impl Handler<Reset> for UiState {
+    type Result = ();
+
+    fn handle(&mut self, _msg: Reset, _ctx: &mut Self::Context) -> Self::Result {
+        self.laps.write().reset();
+    }
 }

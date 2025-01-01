@@ -12,10 +12,17 @@ use tokio_util::udp::UdpFramed;
 use tracing::{debug, error, instrument, trace};
 
 use crate::{
-    actors::ui::{LapTimeData, UiUpdate},
-    telemetry::broadcast::{
-        BroadcastCodec, BroadcastInboundMessage, BroadcastOutboundMessage, FramedError,
-        RealtimeCarUpdate, RealtimeUpdate, RegisterConnection, RequestTrackData, TrackData,
+    actors::{
+        fuel_calculator::FuelMessage,
+        ui::{LapTimeData, UiUpdate},
+    },
+    telemetry::{
+        broadcast::{
+            BroadcastCodec, BroadcastInboundMessage, BroadcastOutboundMessage, FramedError,
+            RaceSessionType, RealtimeCarUpdate, RealtimeUpdate, RegisterConnection,
+            RequestTrackData, TrackData,
+        },
+        LapTime,
     },
     PROGRAM_NAME,
 };
@@ -23,7 +30,7 @@ use crate::{
 use super::{
     setup_manager::SetupChange,
     ui::{SessionInfo, Weather},
-    Router, ShmGameState,
+    Reset, Router, ShmGameState,
 };
 
 pub struct Broadcast {
@@ -41,6 +48,9 @@ pub struct Broadcast {
     track_data: TrackData,
     realtime_update: RealtimeUpdate,
     realtime_car_update: RealtimeCarUpdate,
+
+    avg_lap_count: u32,
+    avg_lap_time: LapTime,
 }
 
 impl Broadcast {
@@ -53,6 +63,8 @@ impl Broadcast {
             track_data: Default::default(),
             realtime_update: Default::default(),
             realtime_car_update: Default::default(),
+            avg_lap_count: 0,
+            avg_lap_time: Default::default(),
         }
     }
 }
@@ -140,6 +152,14 @@ impl Handler<ShmGameState> for Broadcast {
     }
 }
 
+impl Handler<Reset> for Broadcast {
+    type Result = ();
+
+    fn handle(&mut self, _msg: Reset, _ctx: &mut Self::Context) -> Self::Result {
+        self.reset();
+    }
+}
+
 impl StreamHandler<Result<(BroadcastInboundMessage, SocketAddr), FramedError>> for Broadcast {
     #[instrument(skip_all)]
     fn handle(
@@ -161,7 +181,7 @@ impl StreamHandler<Result<(BroadcastInboundMessage, SocketAddr), FramedError>> f
                             ));
 
                         self.router.do_send(UiUpdate::SessionLive(true));
-                        self.router.do_send(UiUpdate::LapReset);
+                        self.router.do_send(crate::actors::Reset);
                     } else {
                         error!("failed to register to broadcast api: {:?}", r.err_msg);
                         self.router.do_send(UiUpdate::SessionLive(false));
@@ -219,8 +239,26 @@ impl Broadcast {
     }
 
     fn update_time(&mut self, update: &RealtimeUpdate) {
-        if self.realtime_update.session_time != update.session_time {
+        if self.realtime_update.session_length() != update.session_length() {
+            debug!("session time: {:?}", update.session_length());
+            match update.session_type {
+                RaceSessionType::Qualifying | RaceSessionType::Superpole => {
+                    self.router
+                        .do_send(FuelMessage::QualiLength(Duration::from_millis(
+                            update.session_length().ceil() as u64,
+                        )))
+                }
+                RaceSessionType::Race | RaceSessionType::Hotstint => {
+                    self.router
+                        .do_send(FuelMessage::RaceLength(Duration::from_millis(
+                            update.session_length().ceil() as u64,
+                        )))
+                }
+                _ => (),
+            };
+
             self.realtime_update.session_time = update.session_time;
+            self.realtime_update.session_end_time = update.session_end_time;
         }
     }
 
@@ -231,6 +269,19 @@ impl Broadcast {
 
             if update.laps >= 1 {
                 let last = update.last_lap;
+
+                // Calculate Avg Lap Time and send to fuel calculator
+                if !last.invalid {
+                    let avg = ((self.avg_lap_time.duration().as_millis()
+                        * self.avg_lap_count as u128)
+                        + last.laptime.unwrap() as u128)
+                        / (self.avg_lap_count as u128 + 1);
+
+                    self.avg_lap_count += 1;
+                    self.avg_lap_time = Duration::from_millis(avg as u64).into();
+                    self.router
+                        .do_send(FuelMessage::AvgLapTime(self.avg_lap_time.clone()));
+                }
 
                 self.router.do_send(UiUpdate::LapTime(LapTimeData {
                     number: update.laps as i32,
@@ -246,5 +297,17 @@ impl Broadcast {
                 }));
             }
         }
+    }
+
+    /// Reset the consumable fields for reuse in a new session
+    fn reset(&mut self) {
+        self.avg_lap_count = 0;
+        self.avg_lap_time = Default::default();
+
+        self.session_info = Default::default();
+
+        self.track_data = Default::default();
+        self.realtime_update = Default::default();
+        self.realtime_car_update = Default::default();
     }
 }

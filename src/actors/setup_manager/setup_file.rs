@@ -120,6 +120,16 @@ impl SetupFile {
 
         self.save();
     }
+
+    pub fn adjust_fuel(&mut self, fuel: i32) {
+        self.setup.basic_setup.strategy.fuel = fuel - 2;
+        self.save();
+    }
+
+    pub fn adjust_telemetry_laps(&mut self, laps: i32) {
+        self.setup.basic_setup.electronics.telemetry_laps = laps;
+        self.save();
+    }
 }
 
 #[allow(unused)]

@@ -7,6 +7,7 @@ use document::Stylesheet;
 
 use crate::{
     actors::{
+        fuel_calculator::{FuelData, FuelMessage},
         ui::{SessionInfo, UiState},
         ClientManagement,
     },
@@ -71,7 +72,7 @@ type Backend = actix::Addr<crate::actors::Router>;
 fn App() -> Element {
     //
     // Settings
-    let _settings: Signal<Settings> = use_context_provider(|| Signal::new(Settings::init()));
+    let settings: Signal<Settings> = use_context_provider(|| Signal::new(Settings::init()));
 
     // Initialize blank session states
     let track_info: SyncSignal<SessionInfo> =
@@ -80,11 +81,15 @@ fn App() -> Element {
         use_context_provider(|| SyncSignal::new_maybe_sync(crate::actors::ui::Laps::default()));
     let setups: SyncSignal<crate::actors::ui::Setups> =
         use_context_provider(|| SyncSignal::new_maybe_sync(crate::actors::ui::Setups::default()));
+    let fuel_data: SyncSignal<FuelData> =
+        use_context_provider(|| SyncSignal::new_maybe_sync(FuelData::default()));
 
     // Initialize Main Arbiter & Background processes
     let arbiter = actix::Arbiter::new();
     let router = crate::actors::Router::initialize(arbiter.handle());
     let router = use_context_provider(|| router);
+
+    router.do_send(FuelMessage::ReserveLaps(settings.read().reserve_laps));
 
     // Initialize Main UI State and add client to backend
     let ui_state = UiState::initialize(
@@ -92,8 +97,10 @@ fn App() -> Element {
         track_info.clone(),
         laps.clone(),
         setups.clone(),
+        fuel_data.clone(),
     );
-    router.do_send(ClientManagement::Add(ui_state));
+    router.do_send(ClientManagement::Add(ui_state.clone()));
+    let _ = use_context_provider(|| ui_state);
 
     rsx! {
         Stylesheet { href: asset!("/public/tailwind.css") }

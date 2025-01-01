@@ -15,7 +15,7 @@ use crate::{
     },
 };
 
-use super::{setup_manager::SetupChange, Router};
+use super::{fuel_calculator::FuelMessage, setup_manager::SetupChange, Router};
 
 pub struct Telemetry {
     interval: SpawnHandle,
@@ -116,10 +116,8 @@ impl Telemetry {
             if l_graphics.completed_laps < update.graphics.completed_laps {
                 // changed fuel usage per lap
                 if l_graphics.fuel_used_per_lap != update.graphics.fuel_used_per_lap {
-                    // TODO
-                    // self.router.do_send(setup::SetupChange::FuelPerLap(
-                    //     self.graphics.fuel_used_per_lap,
-                    // ));
+                    self.router
+                        .do_send(FuelMessage::FuelPerLap(self.graphics.fuel_used_per_lap));
                 }
 
                 // Compute lap results and reset history structs

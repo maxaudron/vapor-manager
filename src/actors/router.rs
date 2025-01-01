@@ -3,6 +3,7 @@ use tracing::debug;
 
 use super::{
     broadcast::Broadcast,
+    fuel_calculator::{FuelCalculator, FuelMessage},
     setup_manager::{SetupChange, SetupManager},
     telemetry::Telemetry,
     ui::{UiState, UiUpdate},
@@ -13,6 +14,7 @@ pub struct Router {
     telemetry: Addr<Telemetry>,
     broadcast: Addr<Broadcast>,
     setup_manager: Addr<SetupManager>,
+    fuel_calculator: Addr<FuelCalculator>,
     clients: Vec<Addr<UiState>>,
 }
 
@@ -26,17 +28,24 @@ impl Router {
             let broadcast = Broadcast::new(ctx.address()).start();
 
             let setup_manager = SetupManager::new(ctx.address()).start();
+            let fuel_calculator = FuelCalculator::new(ctx.address()).start();
 
             Router {
                 telemetry,
                 broadcast,
                 setup_manager,
+                fuel_calculator,
                 clients: Vec::new(),
             }
         })
     }
 
-    fn send_clients(&mut self, msg: UiUpdate) {
+    fn send_clients<T>(&mut self, msg: T)
+    where
+        T: Message + Clone + Send + 'static,
+        <T as Message>::Result: Send,
+        UiState: actix::Handler<T>,
+    {
         self.clients.iter_mut().for_each(|c| c.do_send(msg.clone()));
     }
 }
@@ -93,6 +102,14 @@ impl Handler<SetupChange> for Router {
     }
 }
 
+#[derive(Debug, Clone, Message)]
+#[rtype(result = "()")]
+pub enum ClientManagement {
+    Add(Addr<UiState>),
+    #[allow(unused)]
+    Remove(Addr<UiState>),
+}
+
 impl Handler<ClientManagement> for Router {
     type Result = ();
 
@@ -107,10 +124,25 @@ impl Handler<ClientManagement> for Router {
     }
 }
 
-#[derive(Debug, Clone, Message)]
+impl Handler<FuelMessage> for Router {
+    type Result = ();
+
+    fn handle(&mut self, msg: FuelMessage, _ctx: &mut Self::Context) -> Self::Result {
+        debug!("fuel message: {msg:?}");
+        self.fuel_calculator.do_send(msg)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Message)]
 #[rtype(result = "()")]
-pub enum ClientManagement {
-    Add(Addr<UiState>),
-    #[allow(unused)]
-    Remove(Addr<UiState>),
+pub struct Reset;
+
+impl Handler<Reset> for Router {
+    type Result = ();
+
+    fn handle(&mut self, msg: Reset, _ctx: &mut Self::Context) -> Self::Result {
+        self.send_clients(msg);
+        self.fuel_calculator.do_send(msg);
+        self.broadcast.do_send(msg);
+    }
 }
