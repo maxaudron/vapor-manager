@@ -43,12 +43,14 @@ pub fn launch() -> () {
         config = config.with_data_directory(documents)
     }
 
-    let bin: &[u8] = include_bytes!("../../icons/icon.bin");
-    let rgba = Icon::from_rgba(bin.to_owned(), 460, 460).expect("image parse failed");
+    let bin: &[u8] = include_bytes!("../../icons/icon.rgba");
+    let rgba = Icon::from_rgba(bin.to_owned(), 512, 512).expect("image parse failed");
 
     #[cfg(not(debug_assertions))]
     let config = config.with_menu(None);
     let size = LogicalSize::new(1250, 800);
+
+    static STYLE: &str = include_str!("../../public/tailwind.css");
 
     LaunchBuilder::desktop()
         .with_cfg(
@@ -60,7 +62,8 @@ pub fn launch() -> () {
                         .with_min_inner_size(size)
                         .with_title(PROGRAM_NAME),
                 )
-                .with_icon(rgba),
+                .with_icon(rgba)
+                .with_custom_head(format!("<style>{STYLE}</style>")),
         )
         .launch(App);
 }
@@ -103,7 +106,6 @@ fn App() -> Element {
     let _ = use_context_provider(|| ui_state);
 
     rsx! {
-        Stylesheet { href: asset!("/public/tailwind.css") }
         Router::<Route> {}
     }
 }

@@ -1,0 +1,49 @@
+{
+  "identifier": "systems.Vapor",
+  "productName": "Vapor Manager",
+  "version": "1.1.0",
+  "build": {
+    "beforeBuildCommand": "",
+    "beforeDevCommand": "",
+    "frontendDist": "./public"
+  },
+  "app": {
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 600,
+        "resizable": true,
+        "title": "Tauri App",
+        "width": 800
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "publisher": "Vapor Systems",
+    "createUpdaterArtifacts": false,
+    "icon": ["icons/icon.ico"],
+    "targets": "msi",
+    "useLocalToolsDir": false,
+    "windows": {
+      "allowDowngrades": true,
+      "certificateThumbprint": null,
+      "digestAlgorithm": null,
+      "nsis": null,
+      "signCommand": null,
+      "timestampUrl": null,
+      "tsp": false,
+      "webviewInstallMode": {
+        "silent": true,
+        "type": "downloadBootstrapper"
+      },
+      "wix": {
+        "upgradeCode": "d30a50af-ca57-51a1-ac4c-6b3680260ea8"
+      }
+    }
+  },
+  "plugins": {}
+}
