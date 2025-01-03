@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dioxus = { version = "=0.6.0-alpha.5", features = ["desktop", "router"] }
+dioxus = { version = "0.6.1", features = ["desktop", "router"] }
 futures = "0.3"
 futures-util = "0.3"
 futures-channel = "0.3"
@@ -41,3 +41,15 @@ paste = "1"
 default = []
 
 debugger = []
+
+[profile]
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"

@@ -14,7 +14,15 @@ out_dir = "dist"
 asset_dir = "public"
 
 [bundle]
-icon = ["icons/icon_128.png", "icons/icon_64.png"]
+identifier = "com.vaporsystems"
+publisher = "Vapor Systems"
+icon = ["icons/icon.ico"]
+
+[bundle.windows]
+icon_path = "icons/icon.ico"
+webview_install_mode = { OfflineInstaller = { silent = true } }
+allow_downgrades = true
+tsp = false
 
 [web.app]
 
