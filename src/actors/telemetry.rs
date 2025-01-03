@@ -48,14 +48,18 @@ impl Telemetry {
     fn commit_update(&mut self, update: TelemetryUpdate) {
         self.static_data = update.static_data;
 
-        if update.graphics.packet_id > self.graphics.packet_id {
+        if update.graphics.packet_id > self.graphics.packet_id
+            || update.graphics.packet_id < self.graphics.packet_id - 500
+        {
             self.graphics = update.graphics.clone();
             self.lap_history.h_graphics.push(update.graphics);
         }
 
         // TODO this might be causing the problems with the repeated lap times
         // what happens when this number reaches it's max?
-        if update.physics.packet_id > self.physics.packet_id {
+        if update.physics.packet_id > self.physics.packet_id
+            || update.physics.packet_id < self.physics.packet_id - 500
+        {
             self.physics = update.physics.clone();
             self.lap_history.h_physics.push(update.physics);
         }
