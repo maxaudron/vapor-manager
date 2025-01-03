@@ -98,16 +98,18 @@ pub fn SettingsComponent() -> Element {
         settings.write().reserve_laps = reserve_laps();
     });
 
+    static VERSION: &str = env!("CARGO_PKG_VERSION");
+
     rsx! {
-        div { class: "grid auto-rows-min bg-base rounded-md shadow-lg p-4 gap-4",
-            div { class: "grid auto-rows-min gap-2",
+        div { class: "grid grid-rows-[min-content,min-content,1fr,min-content] bg-base rounded-md shadow-lg p-4 gap-4",
+            div { class: "grid gap-2",
                 h1 { class: "text-xl", "App" }
                 div { class: "label bg-surface0 rounded-md h-min px-2 pr-4",
                     span { class: "text-lg pl-8 label-text text-nowrap", "Theme" }
                     ThemeSwitcher { }
                 }
             }
-            div { class: "grid auto-rows-min gap-2",
+            div { class: "grid gap-2",
                 h1 { class: "text-xl", "Setups" }
                 InputNumber::<i32> {
                     name: "Telemetry Laps",
@@ -123,6 +125,10 @@ pub fn SettingsComponent() -> Element {
                     max: 99,
                     step: 1
                 }
+            }
+            div { class: "grid gap-2 self-center" }
+            div { class: "grid gap-2 justify-self-center",
+                "Vapor Manager {VERSION}"
             }
         }
     }
