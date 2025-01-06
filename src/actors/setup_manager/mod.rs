@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, time::Duration};
+use std::{collections::BTreeMap, path::PathBuf, time::Duration};
 
 use actix::prelude::*;
 
@@ -30,8 +30,8 @@ pub struct SetupManager {
     pub quali_fuel: i32,
     pub telemetry_laps: i32,
 
-    pub templates: HashMap<String, SetupFile>,
-    pub setups: HashMap<String, SetupFile>,
+    pub templates: BTreeMap<String, SetupFile>,
+    pub setups: BTreeMap<String, SetupFile>,
 
     pub setup_folder: PathBuf,
     pub template_folder: PathBuf,
@@ -164,7 +164,10 @@ impl SetupManager {
             .filter(|f| (!f.path().is_dir()) && f.path().extension().is_some_and(|x| x == "json"))
             .map(|f| SetupFile::load(&f.path()))
             .map(|setup| setup.and_then(|setup| Ok((setup.name.clone(), setup))))
-            .collect::<Result<HashMap<String, SetupFile>, SetupError>>()?;
+            .collect::<Result<BTreeMap<String, SetupFile>, SetupError>>()?;
+
+        self.router
+            .do_send(UiUpdate::SetupTemplates(self.templates.clone()));
 
         self.setups = self
             .templates

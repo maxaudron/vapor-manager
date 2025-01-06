@@ -1,5 +1,4 @@
 use dioxus::prelude::*;
-use tracing::debug;
 
 use crate::telemetry::broadcast::LapType;
 

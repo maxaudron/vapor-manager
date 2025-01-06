@@ -1,4 +1,7 @@
-use std::{collections::HashMap, time::Duration};
+use std::{
+    collections::{BTreeMap, HashMap},
+    time::Duration,
+};
 
 use actix::prelude::*;
 use dioxus::signals::{SyncSignal, Writable};
@@ -70,8 +73,8 @@ pub enum UiUpdate {
     SessionLive(bool),
     LapTime(LapTimeData),
     LapWheels(LapWheels),
-    SetupTemplates(HashMap<String, SetupFile>),
-    SetupAdjusted(HashMap<String, SetupFile>),
+    SetupTemplates(BTreeMap<String, SetupFile>),
+    SetupAdjusted(BTreeMap<String, SetupFile>),
     FuelData(FuelData),
 }
 
@@ -179,8 +182,8 @@ pub struct LapTimeData {
 #[derive(Debug, Default, Clone, Message)]
 #[rtype(result = "()")]
 pub struct Setups {
-    pub templates: HashMap<String, SetupFile>,
-    pub adjusted: HashMap<String, SetupFile>,
+    pub templates: BTreeMap<String, SetupFile>,
+    pub adjusted: BTreeMap<String, SetupFile>,
 }
 
 impl Handler<Reset> for UiState {
