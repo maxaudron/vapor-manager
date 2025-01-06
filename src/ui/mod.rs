@@ -3,6 +3,7 @@ use dioxus::{
     desktop::{tao::window::Icon, Config, LogicalSize, WindowBuilder},
     prelude::*,
 };
+use tracing::debug;
 
 use crate::{
     actors::{
@@ -103,6 +104,11 @@ fn App() -> Element {
     );
     router.do_send(ClientManagement::Add(ui_state.clone()));
     let _ = use_context_provider(|| ui_state);
+
+    use_drop(move || {
+        debug!("stopping main arbiter");
+        arbiter.stop();
+    });
 
     rsx! {
         Router::<Route> {}

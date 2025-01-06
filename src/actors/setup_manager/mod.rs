@@ -63,7 +63,15 @@ impl Actor for SetupManager {
         self.setup_paths().unwrap();
     }
 
-    fn stopped(&mut self, _ctx: &mut Self::Context) {}
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        debug!("setup manager stopped");
+        self.setups.iter().for_each(|(_name, setup)| {
+            setup.delete().unwrap_or_else(|e| {
+                error!("failed to delete setup: {e:?}");
+                ()
+            });
+        })
+    }
 }
 
 #[derive(Debug, Clone, Message)]
@@ -206,12 +214,6 @@ impl SetupManager {
         self.setups
             .iter_mut()
             .for_each(|(_, setup)| setup.adjust_telemetry_laps(laps));
-    }
-}
-
-impl Drop for SetupManager {
-    fn drop(&mut self) {
-        self.setups.iter().for_each(|(_name, setup)| setup.delete())
     }
 }
 

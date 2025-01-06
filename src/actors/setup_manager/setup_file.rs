@@ -86,10 +86,10 @@ impl SetupFile {
         serde_json::to_writer_pretty(file, &self.setup).unwrap()
     }
 
-    pub fn delete(&self) {
+    pub fn delete(&self) -> std::io::Result<()> {
         let path = self.path_with_name();
         debug!("deleting setup: {:?}", path);
-        std::fs::remove_file(path).unwrap();
+        std::fs::remove_file(path)
     }
 
     pub fn adjust_weather(&mut self, weather: &Weather) {
