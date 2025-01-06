@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, time::Duration};
 
 use actix::prelude::*;
 
@@ -35,6 +35,8 @@ pub struct SetupManager {
 
     pub setup_folder: PathBuf,
     pub template_folder: PathBuf,
+
+    setup_scheduled: Option<SpawnHandle>,
 }
 
 impl SetupManager {
@@ -52,6 +54,8 @@ impl SetupManager {
 
             setup_folder: Default::default(),
             template_folder: Default::default(),
+
+            setup_scheduled: None,
         }
     }
 }
@@ -89,7 +93,7 @@ pub enum SetupChange {
 impl Handler<SetupChange> for SetupManager {
     type Result = ();
 
-    fn handle(&mut self, msg: SetupChange, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: SetupChange, ctx: &mut Self::Context) -> Self::Result {
         match msg {
             SetupChange::Weather(weather) => {
                 self.weather = weather;
@@ -99,6 +103,8 @@ impl Handler<SetupChange> for SetupManager {
                 if let Err(err) = self.load(car, track) {
                     error!("failed to load setups: {err}")
                 }
+
+                return;
             }
             SetupChange::RaceFuel(fuel) => {
                 self.race_fuel = fuel;
@@ -120,7 +126,7 @@ impl Handler<SetupChange> for SetupManager {
             }
         };
 
-        self.router.do_send(UiUpdate::SetupAdjusted(self.setups.clone()));
+        ctx.notify(CommitChanges::Schedule);
     }
 }
 
@@ -172,9 +178,6 @@ impl SetupManager {
             })
             .collect();
 
-        self.router
-            .do_send(UiUpdate::SetupTemplates(self.templates.clone()));
-
         // Send fuel per lap of whatever setup we get to fuelcalculator
         // to at least have some value in it
         if let Some((_, setup)) = self.setups.iter().next() {
@@ -193,6 +196,7 @@ impl SetupManager {
     }
 
     fn adjust_weather(&mut self, weather: Weather) {
+        self.cleanup_setups();
         self.setups
             .iter_mut()
             .for_each(|(_, setup)| setup.adjust_weather(&weather));
@@ -233,4 +237,31 @@ pub enum SetupError {
     ParsePathError,
     #[error("failed to parse setup file")]
     SerdeError(#[from] serde_json::Error),
+}
+
+#[derive(Debug, Clone, Message)]
+#[rtype(result = "()")]
+enum CommitChanges {
+    Schedule,
+    Handle,
+}
+
+impl Handler<CommitChanges> for SetupManager {
+    type Result = ();
+
+    fn handle(&mut self, msg: CommitChanges, ctx: &mut Self::Context) -> Self::Result {
+        match msg {
+            CommitChanges::Schedule => {
+                if let Some(handle) = self.setup_scheduled {
+                    ctx.cancel_future(handle);
+                }
+
+                ctx.notify_later(CommitChanges::Handle, Duration::from_millis(500));
+            }
+            CommitChanges::Handle => {
+                self.setups.iter_mut().for_each(|(_, s)| s.save());
+                self.router.do_send(UiUpdate::SetupAdjusted(self.setups.clone()));
+            }
+        }
+    }
 }

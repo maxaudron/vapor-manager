@@ -113,18 +113,14 @@ impl SetupFile {
             .pit_strategy
             .iter_mut()
             .for_each(|s| s.tyres.tyre_pressure.iter_mut().for_each(|i| *i += diff as i32));
-
-        self.save();
     }
 
     pub fn adjust_fuel(&mut self, fuel: i32) {
         self.setup.basic_setup.strategy.fuel = fuel - 2;
-        self.save();
     }
 
     pub fn adjust_telemetry_laps(&mut self, laps: i32) {
         self.setup.basic_setup.electronics.telemetry_laps = laps;
-        self.save();
     }
 }
 
