@@ -175,3 +175,15 @@ impl Actor for Telemetry {
         ctx.cancel_future(self.interval);
     }
 }
+
+#[derive(Debug, Clone, Message)]
+#[rtype(result = "i16")]
+pub struct CarID;
+
+impl Handler<CarID> for Telemetry {
+    type Result = i16;
+
+    fn handle(&mut self, _msg: CarID, _ctx: &mut Self::Context) -> Self::Result {
+        self.graphics.player_car_id as i16
+    }
+}

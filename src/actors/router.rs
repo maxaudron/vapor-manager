@@ -1,11 +1,12 @@
 use actix::prelude::*;
+use dioxus::dioxus_core::SpawnIfAsync;
 use tracing::debug;
 
 use super::{
     broadcast::Broadcast,
     fuel_calculator::{FuelCalculator, FuelMessage},
     setup_manager::{SetupChange, SetupManager},
-    telemetry::Telemetry,
+    telemetry::{CarID, Telemetry},
     ui::{UiState, UiUpdate},
 };
 
@@ -143,6 +144,14 @@ impl Handler<Reset> for Router {
     fn handle(&mut self, msg: Reset, _ctx: &mut Self::Context) -> Self::Result {
         self.send_clients(msg);
         self.fuel_calculator.do_send(msg);
-        self.broadcast.do_send(msg);
+    }
+}
+
+impl Handler<CarID> for Router {
+    type Result = ResponseFuture<i16>;
+
+    fn handle(&mut self, msg: CarID, _ctx: &mut Self::Context) -> Self::Result {
+        let result = self.telemetry.send(msg);
+        Box::pin(async move { result.await.unwrap() })
     }
 }

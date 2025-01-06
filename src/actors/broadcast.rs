@@ -34,6 +34,7 @@ use super::{
 
 pub struct Broadcast {
     id: i32,
+    car_id: i16,
     router: Addr<Router>,
     sink: Option<
         SinkWrite<
@@ -58,6 +59,7 @@ impl Broadcast {
             router,
             sink: None,
             id: 0,
+            car_id: 0,
             session_info: Default::default(),
             track_data: Default::default(),
             realtime_update: Default::default(),
@@ -168,8 +170,18 @@ impl StreamHandler<Result<(BroadcastInboundMessage, SocketAddr), FramedError>> f
             Ok(msg) => match msg.0 {
                 BroadcastInboundMessage::RegistrationResult(r) => {
                     if r.connection_success {
+                        self.reset();
                         self.id = r.id;
-                        // self.router.send(BroadcastConnected);
+
+                        self.router
+                            .send(crate::actors::telemetry::CarID)
+                            .into_actor(self)
+                            .map(|car_id, actor, _ctx| {
+                                actor.car_id = car_id.unwrap();
+                                debug!("retrived car id: {}", car_id.unwrap());
+                            })
+                            .spawn(ctx);
+
                         ctx.address().do_send(BroadcastOutboundMessage::RequestTrackData(
                             RequestTrackData::new(self.id),
                         ));
@@ -187,7 +199,11 @@ impl StreamHandler<Result<(BroadcastInboundMessage, SocketAddr), FramedError>> f
 
                     self.realtime_update = d;
                 }
-                BroadcastInboundMessage::RealtimeCarUpdate(update) => self.update_laps(update),
+                BroadcastInboundMessage::RealtimeCarUpdate(update) => {
+                    if update.car_index == self.car_id {
+                        self.update_laps(update)
+                    }
+                }
                 BroadcastInboundMessage::EntryList(_) => (),
                 BroadcastInboundMessage::EntryListCar(_) => (),
                 BroadcastInboundMessage::TrackData(d) => {
@@ -253,7 +269,7 @@ impl Broadcast {
 
     fn update_laps(&mut self, update: RealtimeCarUpdate) {
         if self.realtime_car_update.laps != update.laps {
-            debug!("laps: {:?}", update.laps);
+            debug!("realtime update: {:?}", update);
             self.realtime_car_update.laps = update.laps;
 
             if update.laps >= 1 {
