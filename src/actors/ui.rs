@@ -85,8 +85,8 @@ impl Handler<UiUpdate> for UiState {
             UiUpdate::Weather(weather) => self.session_info.write().weather = weather,
             UiUpdate::SessionTime(time) => self.session_info.write().time = time,
             UiUpdate::SessionLive(live) => self.session_info.write().live = live,
-            UiUpdate::LapTime(time) => self.laps.write().times.push(time),
-            UiUpdate::LapWheels(wheels) => self.laps.write().wheels.push(wheels),
+            UiUpdate::LapTime(time) => self.laps.write().insert_time(time),
+            UiUpdate::LapWheels(wheels) => self.laps.write().insert_wheels(wheels),
             UiUpdate::SetupTemplates(setups) => self.setups.write().templates = setups,
             UiUpdate::SetupAdjusted(setups) => self.setups.write().adjusted = setups,
             UiUpdate::FuelData(fuel) => self.fuel_data.write().replace(fuel),
@@ -97,14 +97,73 @@ impl Handler<UiUpdate> for UiState {
 #[derive(Debug, Default, Clone, Message)]
 #[rtype(result = "()")]
 pub struct Laps {
-    pub times: Vec<LapTimeData>,
-    pub wheels: Vec<LapWheels>,
+    pub times: HashMap<i32, LapTimeData>,
+    pub wheels: HashMap<i32, LapWheels>,
 }
 
 impl Laps {
     pub fn reset(&mut self) {
         self.times.clear();
         self.wheels.clear();
+    }
+}
+
+impl Laps {
+    fn insert_time(&mut self, time: LapTimeData) {
+        let _ = self.times.insert(time.number, time);
+    }
+
+    fn insert_wheels(&mut self, wheels: LapWheels) {
+        let _ = self.wheels.insert(wheels.number, wheels);
+    }
+
+    pub fn get(&self, index: i32) -> Option<(&LapTimeData, &LapWheels)> {
+        let time = self.times.get(&index);
+        let wheels = self.wheels.get(&index);
+
+        if time.is_some() && wheels.is_some() {
+            Some((time.unwrap(), wheels.unwrap()))
+        } else {
+            None
+        }
+    }
+
+    pub fn iter(&self) -> LapsIter<'_> {
+        LapsIter::new(self)
+    }
+
+    pub fn sectors(&self) -> usize {
+        if let Some((lap_time, _)) = self.iter().next().and_then(|lap| lap) {
+            lap_time.sectors.len()
+        } else {
+            3
+        }
+    }
+}
+
+pub struct LapsIter<'a> {
+    lap: i32,
+    max: i32,
+    laps: &'a Laps,
+}
+
+impl LapsIter<'_> {
+    pub fn new(laps: &Laps) -> LapsIter<'_> {
+        let max = *laps.times.keys().into_iter().max().unwrap_or(&0);
+        LapsIter { lap: 0, max, laps }
+    }
+}
+
+impl<'a> Iterator for LapsIter<'a> {
+    type Item = Option<(&'a LapTimeData, &'a LapWheels)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.lap < self.max {
+            self.lap += 1;
+            Some(self.laps.get(self.lap))
+        } else {
+            None
+        }
     }
 }
 

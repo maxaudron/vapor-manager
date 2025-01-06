@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use tracing::debug;
 
 use crate::telemetry::broadcast::LapType;
 
@@ -6,14 +7,14 @@ use crate::telemetry::broadcast::LapType;
 pub fn Laps() -> Element {
     let state: SyncSignal<crate::actors::ui::Laps> = use_context();
 
-    if state.read().times.is_empty() {
+    if state.read().iter().filter_map(|lap| lap).next().is_none() {
         rsx! {
             div { class: "grid bg-base rounded-lg shadow-lg overflow-auto h-auto",
                 div { class: "justify-self-center align-middle", "No Laps Recorded" }
             }
         }
     } else {
-        let sectors = state.read().times.first().unwrap().sectors.len();
+        let sectors = state.read().sectors();
 
         rsx! {
             div { class: "bg-base rounded-lg shadow-lg scrollable h-auto",
@@ -69,7 +70,7 @@ pub fn Laps() -> Element {
                     }
                     tbody {
                         {
-                            state.read().times.iter().zip(state.read().wheels.iter()).map(|(times, lap)| {
+                            state.read().iter().filter_map(|lap| lap).map(|(times, lap)| {
                                 rsx! {
                                     { if times.lap_type == LapType::Outlap {
                                         rsx! {
