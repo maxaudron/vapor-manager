@@ -34,11 +34,7 @@ pub fn read_lap(input: &[u8]) -> IResult<&[u8], LapInfo> {
     let lap_type = LapType::new(out_lap > 0, in_lap > 0);
 
     let lap = LapInfo {
-        laptime: if laptime == i32::MAX {
-            None
-        } else {
-            Some(laptime)
-        },
+        laptime: if laptime == i32::MAX { None } else { Some(laptime) },
         car_index,
         driver_index,
         splits,
@@ -100,8 +96,8 @@ impl LapType {
 #[test]
 fn test_lapinfo_deserialize() {
     let input = [
-        255, 255, 255, 127, 0, 0, 0, 0, 3, 255, 255, 255, 127, 255, 255, 255, 127, 255, 255, 255,
-        127, 0, 1, 0, 0,
+        255, 255, 255, 127, 0, 0, 0, 0, 3, 255, 255, 255, 127, 255, 255, 255, 127, 255, 255, 255, 127, 0, 1,
+        0, 0,
     ];
 
     let lapinfo = LapInfo {

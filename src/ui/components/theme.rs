@@ -7,17 +7,7 @@ use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use crate::ui::components::Settings;
 
 #[derive(
-    Clone,
-    Default,
-    Copy,
-    Debug,
-    Display,
-    PartialEq,
-    PartialOrd,
-    EnumIter,
-    EnumString,
-    Deserialize,
-    Serialize,
+    Clone, Default, Copy, Debug, Display, PartialEq, PartialOrd, EnumIter, EnumString, Deserialize, Serialize,
 )]
 pub enum Theme {
     Latte,

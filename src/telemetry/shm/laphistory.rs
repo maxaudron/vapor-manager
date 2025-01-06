@@ -92,10 +92,7 @@ macro_rules! avg_min_max {
 impl LapHistory {
     pub fn last_point(&self) -> Option<(&Physics, &Graphics)> {
         if self.h_physics.last().is_some() && self.h_graphics.last().is_some() {
-            Some((
-                self.h_physics.last().unwrap(),
-                self.h_graphics.last().unwrap(),
-            ))
+            Some((self.h_physics.last().unwrap(), self.h_graphics.last().unwrap()))
         } else {
             None
         }

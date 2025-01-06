@@ -1,8 +1,8 @@
 use crate::telemetry::shm::{
-    Aids, CarDamage, FlagType, FlagTypeRaw, GlobalFlags, Graphics, LapTiming, MfdPitstop,
-    PageFileGraphics, PageFilePhysics, PageFileStatic, Penalty, PenaltyRaw, Physics, RainIntensity,
-    RainIntensityRaw, SessionType, SessionTypeRaw, StaticData, Status, StatusRaw, Time,
-    TrackGripStatus, TrackGripStatusRaw, Vector3, WheelInfo, Wheels,
+    Aids, CarDamage, FlagType, FlagTypeRaw, GlobalFlags, Graphics, LapTiming, MfdPitstop, PageFileGraphics,
+    PageFilePhysics, PageFileStatic, Penalty, PenaltyRaw, Physics, RainIntensity, RainIntensityRaw,
+    SessionType, SessionTypeRaw, StaticData, Status, StatusRaw, Time, TrackGripStatus, TrackGripStatusRaw,
+    Vector3, WheelInfo, Wheels,
 };
 
 pub fn extract_string(data: &[u16]) -> String {

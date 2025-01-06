@@ -18,9 +18,8 @@ use crate::{
     },
     telemetry::{
         broadcast::{
-            BroadcastCodec, BroadcastInboundMessage, BroadcastOutboundMessage, FramedError,
-            RaceSessionType, RealtimeCarUpdate, RealtimeUpdate, RegisterConnection,
-            RequestTrackData, TrackData,
+            BroadcastCodec, BroadcastInboundMessage, BroadcastOutboundMessage, FramedError, RaceSessionType,
+            RealtimeCarUpdate, RealtimeUpdate, RegisterConnection, RequestTrackData, TrackData,
         },
         LapTime,
     },
@@ -117,11 +116,7 @@ impl Handler<BroadcastOutboundMessage> for Broadcast {
     #[instrument(skip(self, _ctx))]
     fn handle(&mut self, msg: BroadcastOutboundMessage, _ctx: &mut Self::Context) -> Self::Result {
         debug!("sending outbound message to socket");
-        self.sink
-            .as_mut()
-            .unwrap()
-            .write((msg, *SOCKET_ADDR))
-            .unwrap();
+        self.sink.as_mut().unwrap().write((msg, *SOCKET_ADDR)).unwrap();
     }
 }
 
@@ -175,10 +170,9 @@ impl StreamHandler<Result<(BroadcastInboundMessage, SocketAddr), FramedError>> f
                     if r.connection_success {
                         self.id = r.id;
                         // self.router.send(BroadcastConnected);
-                        ctx.address()
-                            .do_send(BroadcastOutboundMessage::RequestTrackData(
-                                RequestTrackData::new(self.id),
-                            ));
+                        ctx.address().do_send(BroadcastOutboundMessage::RequestTrackData(
+                            RequestTrackData::new(self.id),
+                        ));
 
                         self.router.do_send(UiUpdate::SessionLive(true));
                         self.router.do_send(crate::actors::Reset);
@@ -212,8 +206,7 @@ impl Broadcast {
     fn update_track_name(&mut self, update: &TrackData) {
         if self.track_data.name != update.name {
             self.session_info.name = update.name.clone();
-            self.router
-                .do_send(UiUpdate::TrackName(update.name.clone()));
+            self.router.do_send(UiUpdate::TrackName(update.name.clone()));
         }
     }
     fn update_weather(&mut self, update: &RealtimeUpdate) {
@@ -231,8 +224,7 @@ impl Broadcast {
                 wetness: update.wetness,
             };
 
-            self.router
-                .do_send(UiUpdate::Weather(self.session_info.weather));
+            self.router.do_send(UiUpdate::Weather(self.session_info.weather));
             self.router
                 .do_send(SetupChange::Weather(self.session_info.weather));
         }
@@ -248,12 +240,9 @@ impl Broadcast {
                             update.session_length().ceil() as u64,
                         )))
                 }
-                RaceSessionType::Race | RaceSessionType::Hotstint => {
-                    self.router
-                        .do_send(FuelMessage::RaceLength(Duration::from_millis(
-                            update.session_length().ceil() as u64,
-                        )))
-                }
+                RaceSessionType::Race | RaceSessionType::Hotstint => self.router.do_send(
+                    FuelMessage::RaceLength(Duration::from_millis(update.session_length().ceil() as u64)),
+                ),
                 _ => (),
             };
 
@@ -272,8 +261,7 @@ impl Broadcast {
 
                 // Calculate Avg Lap Time and send to fuel calculator
                 if !last.invalid {
-                    let avg = ((self.avg_lap_time.duration().as_millis()
-                        * self.avg_lap_count as u128)
+                    let avg = ((self.avg_lap_time.duration().as_millis() * self.avg_lap_count as u128)
                         + last.laptime.unwrap() as u128)
                         / (self.avg_lap_count as u128 + 1);
 

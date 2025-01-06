@@ -1,9 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::ui::{
-    components::{
-        fuel_calculator::FuelCalculator, laps::Laps, setups::SetupView, Settings, StatusBar,
-    },
+    components::{fuel_calculator::FuelCalculator, laps::Laps, setups::SetupView, Settings, StatusBar},
     Route,
 };
 

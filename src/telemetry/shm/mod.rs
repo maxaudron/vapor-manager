@@ -36,13 +36,11 @@ pub trait SharedMemoryPage {
     where
         Self: Sized + std::fmt::Debug,
     {
-        let handle: HANDLE = unsafe {
-            OpenFileMappingA(FILE_MAP_READ.0, false, PCSTR::from_raw(Self::NAME.as_ptr()))
-        }
-        .map_err(|e| TelemetryError::ConnectionFailed(e))?;
+        let handle: HANDLE =
+            unsafe { OpenFileMappingA(FILE_MAP_READ.0, false, PCSTR::from_raw(Self::NAME.as_ptr())) }
+                .map_err(|e| TelemetryError::ConnectionFailed(e))?;
 
-        let file_view: *const c_void =
-            unsafe { MapViewOfFile(handle, FILE_MAP_READ, 0, 0, 0) }.Value;
+        let file_view: *const c_void = unsafe { MapViewOfFile(handle, FILE_MAP_READ, 0, 0, 0) }.Value;
         // trace!("map view of file: {:?}", file_view);
 
         let data: &Self = unsafe { &(*(file_view as *const Self)) };

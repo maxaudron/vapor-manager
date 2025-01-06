@@ -79,8 +79,8 @@ impl BroadcastNetworkProtocolInbound for RealtimeUpdate {
 
         // FIXME i'm lazy
         out.extend([
-            255, 255, 255, 127, 0, 0, 0, 0, 3, 255, 255, 255, 127, 255, 255, 255, 127, 255, 255,
-            255, 127, 0, 1, 0, 0,
+            255, 255, 255, 127, 0, 0, 0, 0, 3, 255, 255, 255, 127, 255, 255, 255, 127, 255, 255, 255, 127, 0,
+            1, 0, 0,
         ]);
 
         out
@@ -90,10 +90,8 @@ impl BroadcastNetworkProtocolInbound for RealtimeUpdate {
     where
         Self: Sized,
     {
-        let (
-            input,
-            (event_index, session_index, session_type, phase, session_time, session_end_time),
-        ) = tuple((le_u16, le_u16, u8, u8, le_f32, le_f32))(input)?;
+        let (input, (event_index, session_index, session_type, phase, session_time, session_end_time)) =
+            tuple((le_u16, le_u16, u8, u8, le_f32, le_f32))(input)?;
 
         let (input, (focused_car_index, active_camera_set, active_camera, current_hud_page)) =
             tuple((le_i32, read_string, read_string, read_string))(input)?;
@@ -146,10 +144,10 @@ impl BroadcastNetworkProtocolInbound for RealtimeUpdate {
 #[test]
 fn test_realtime_update_deserialize() {
     let buf = [
-        0, 0, 0, 0, 0, 5, 0, 75, 197, 70, 106, 47, 90, 74, 0, 0, 0, 0, 8, 0, 68, 114, 105, 118, 97,
-        98, 108, 101, 7, 0, 67, 111, 99, 107, 112, 105, 116, 9, 0, 66, 97, 115, 105, 99, 32, 72,
-        85, 68, 0, 70, 249, 68, 71, 27, 37, 0, 0, 0, 255, 255, 255, 127, 0, 0, 0, 0, 3, 255, 255,
-        255, 127, 255, 255, 255, 127, 255, 255, 255, 127, 0, 1, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 5, 0, 75, 197, 70, 106, 47, 90, 74, 0, 0, 0, 0, 8, 0, 68, 114, 105, 118, 97, 98, 108,
+        101, 7, 0, 67, 111, 99, 107, 112, 105, 116, 9, 0, 66, 97, 115, 105, 99, 32, 72, 85, 68, 0, 70, 249,
+        68, 71, 27, 37, 0, 0, 0, 255, 255, 255, 127, 0, 0, 0, 0, 3, 255, 255, 255, 127, 255, 255, 255, 127,
+        255, 255, 255, 127, 0, 1, 0, 0, 0, 0, 0, 0,
     ];
 
     let update = RealtimeUpdate {

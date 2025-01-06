@@ -5,9 +5,8 @@ use tokio_util::{
 
 use super::{
     registration::RegistrationResult, BroadcastInboundMessage, BroadcastNetworkProtocolInbound,
-    BroadcastNetworkProtocolOutbound, BroadcastOutboundMessage, BroadcastingEvent, CarInfo,
-    EntryList, InboundMessageTypes, OutboundMessageTypes, RealtimeCarUpdate, RealtimeUpdate,
-    TrackData,
+    BroadcastNetworkProtocolOutbound, BroadcastOutboundMessage, BroadcastingEvent, CarInfo, EntryList,
+    InboundMessageTypes, OutboundMessageTypes, RealtimeCarUpdate, RealtimeUpdate, TrackData,
 };
 
 pub struct BroadcastCodec {}
@@ -42,10 +41,7 @@ impl Decoder for BroadcastCodec {
     type Error = FramedError;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
-        let Some((input, msg_type)) = InboundMessageTypes::read(src)
-            .map(|x| Some(x))
-            .or_else(err)?
-        else {
+        let Some((input, msg_type)) = InboundMessageTypes::read(src).map(|x| Some(x)).or_else(err)? else {
             return Ok(None);
         };
 
@@ -81,30 +77,21 @@ impl Decoder for BroadcastCodec {
                 Ok(Some(BroadcastInboundMessage::RealtimeCarUpdate(msg)))
             }
             InboundMessageTypes::EntryList => {
-                let Some(msg) = EntryList::deserialize(input)
-                    .map(|x| Some(x.1))
-                    .or_else(err)?
-                else {
+                let Some(msg) = EntryList::deserialize(input).map(|x| Some(x.1)).or_else(err)? else {
                     return Ok(None);
                 };
                 src.clear();
                 Ok(Some(BroadcastInboundMessage::EntryList(msg)))
             }
             InboundMessageTypes::EntryListCar => {
-                let Some(msg) = CarInfo::deserialize(input)
-                    .map(|x| Some(x.1))
-                    .or_else(err)?
-                else {
+                let Some(msg) = CarInfo::deserialize(input).map(|x| Some(x.1)).or_else(err)? else {
                     return Ok(None);
                 };
                 src.clear();
                 Ok(Some(BroadcastInboundMessage::EntryListCar(msg)))
             }
             InboundMessageTypes::TrackData => {
-                let Some(msg) = TrackData::deserialize(input)
-                    .map(|x| Some(x.1))
-                    .or_else(err)?
-                else {
+                let Some(msg) = TrackData::deserialize(input).map(|x| Some(x.1)).or_else(err)? else {
                     return Ok(None);
                 };
                 src.clear();
@@ -128,11 +115,7 @@ impl Decoder for BroadcastCodec {
 impl Encoder<BroadcastOutboundMessage> for BroadcastCodec {
     type Error = std::io::Error;
 
-    fn encode(
-        &mut self,
-        item: BroadcastOutboundMessage,
-        dst: &mut BytesMut,
-    ) -> Result<(), Self::Error> {
+    fn encode(&mut self, item: BroadcastOutboundMessage, dst: &mut BytesMut) -> Result<(), Self::Error> {
         match item {
             BroadcastOutboundMessage::RegisterCommandApplication(i) => dst.extend(i.serialize()),
             BroadcastOutboundMessage::UnregisterCommandApplication => {

@@ -67,8 +67,7 @@ impl FuelData {
                 "calculating fuel: {:?} time {:?} l {:?} laps, reserve laps: {:?}",
                 self.race_length, best_millis, laps, self.reserve_laps
             );
-            let fuel = (((laps + self.reserve_laps as u128) as f32 * self.fuel_per_lap) * 1.1)
-                .ceil() as i32;
+            let fuel = (((laps + self.reserve_laps as u128) as f32 * self.fuel_per_lap) * 1.1).ceil() as i32;
 
             self.race_fuel = fuel;
             Some(fuel)
@@ -85,8 +84,7 @@ impl FuelData {
                 "calculating fuel: {:?} time {:?} l {:?} laps, reserve laps: {:?}",
                 self.quali_length, best_millis, laps, self.reserve_laps
             );
-            let fuel = (((laps + self.reserve_laps as u128) as f32 * self.fuel_per_lap) * 1.1)
-                .ceil() as i32;
+            let fuel = (((laps + self.reserve_laps as u128) as f32 * self.fuel_per_lap) * 1.1).ceil() as i32;
 
             self.quali_fuel = fuel;
             Some(fuel)

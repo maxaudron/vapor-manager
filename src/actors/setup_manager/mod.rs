@@ -117,16 +117,14 @@ impl Handler<SetupChange> for SetupManager {
             }
         };
 
-        self.router
-            .do_send(UiUpdate::SetupAdjusted(self.setups.clone()));
+        self.router.do_send(UiUpdate::SetupAdjusted(self.setups.clone()));
     }
 }
 
 impl SetupManager {
     fn setup_paths(&mut self) -> Result<(), SetupError> {
         #[cfg(windows)]
-        let documents =
-            known_folders::get_known_folder_path(known_folders::KnownFolder::Documents).unwrap();
+        let documents = known_folders::get_known_folder_path(known_folders::KnownFolder::Documents).unwrap();
         #[cfg(not(windows))]
         let documents = PathBuf::from("./setups");
 
@@ -194,8 +192,7 @@ impl SetupManager {
             .iter_mut()
             .for_each(|(_, setup)| setup.adjust_weather(&weather));
 
-        self.router
-            .do_send(UiUpdate::SetupAdjusted(self.setups.clone()));
+        self.router.do_send(UiUpdate::SetupAdjusted(self.setups.clone()));
     }
 
     fn adjust_fuel(&mut self, fuel: i32, setup_type: SetupType) {

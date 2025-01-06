@@ -14,7 +14,9 @@ pub enum DriverCategory {
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, IntoPrimitive, FromPrimitive, PartialEq, PartialOrd)]
+#[derive(
+    Clone, Copy, Debug, Default, Serialize, Deserialize, IntoPrimitive, FromPrimitive, PartialEq, PartialOrd,
+)]
 pub enum CarLocation {
     #[default]
     NONE = 0,
@@ -38,7 +40,7 @@ pub enum CarLocation {
     PartialEq,
     PartialOrd,
     EnumString,
-    EnumIter
+    EnumIter,
 )]
 pub enum SessionPhase {
     #[default]
@@ -67,7 +69,7 @@ pub enum SessionPhase {
     PartialEq,
     PartialOrd,
     EnumString,
-    EnumIter
+    EnumIter,
 )]
 pub enum RaceSessionType {
     #[default]

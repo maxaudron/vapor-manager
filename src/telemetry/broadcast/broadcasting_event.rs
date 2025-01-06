@@ -28,8 +28,7 @@ impl BroadcastNetworkProtocolInbound for BroadcastingEvent {
     where
         Self: Sized,
     {
-        let (input, (event_type, msg, time_ms, car_id)) =
-            tuple((u8, read_string, le_i32, le_i32))(input)?;
+        let (input, (event_type, msg, time_ms, car_id)) = tuple((u8, read_string, le_i32, le_i32))(input)?;
 
         Ok((
             input,

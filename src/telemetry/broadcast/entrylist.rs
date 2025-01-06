@@ -98,10 +98,8 @@ impl BroadcastNetworkProtocolInbound for CarInfo {
     where
         Self: Sized,
     {
-        let (
-            input,
-            (id, model_type, team_name, race_number, cup_category, current_driver_id, nationality),
-        ) = tuple((le_u16, u8, read_string, le_i32, u8, u8, le_u16))(input)?;
+        let (input, (id, model_type, team_name, race_number, cup_category, current_driver_id, nationality)) =
+            tuple((le_u16, u8, read_string, le_i32, u8, u8, le_u16))(input)?;
 
         let (mut input, driver_num) = u8(input)?;
         let mut drivers = Vec::new();

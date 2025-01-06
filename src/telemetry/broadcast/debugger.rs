@@ -6,8 +6,7 @@ use tokio::net::UdpSocket;
 use tracing::debug;
 
 use crate::telemetry::broadcast::{
-    registration::RegisterConnection, BroadcastNetworkProtocolOutbound, RequestEntryList,
-    RequestTrackData,
+    registration::RegisterConnection, BroadcastNetworkProtocolOutbound, RequestEntryList, RequestTrackData,
 };
 
 use super::{BroadcastInboundMessage, BroadcastNetworkProtocolInbound, OutboundMessageTypes};
