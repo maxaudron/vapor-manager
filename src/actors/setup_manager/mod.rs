@@ -65,12 +65,7 @@ impl Actor for SetupManager {
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
         debug!("setup manager stopped");
-        self.setups.iter().for_each(|(_name, setup)| {
-            setup.delete().unwrap_or_else(|e| {
-                error!("failed to delete setup: {e:?}");
-                ()
-            });
-        })
+        self.cleanup_setups();
     }
 }
 
@@ -153,6 +148,8 @@ impl SetupManager {
         let template_folder = self.template_folder.join(&car).join(&track);
         std::fs::create_dir_all(&template_folder)?;
 
+        self.cleanup_setups();
+
         let setups = std::fs::read_dir(&template_folder).map_err(|_| SetupError::NoSetups)?;
 
         self.templates = setups
@@ -214,6 +211,15 @@ impl SetupManager {
         self.setups
             .iter_mut()
             .for_each(|(_, setup)| setup.adjust_telemetry_laps(laps));
+    }
+
+    fn cleanup_setups(&self) {
+        self.setups.iter().for_each(|(_name, setup)| {
+            setup.delete().unwrap_or_else(|e| {
+                error!("failed to delete setup: {e:?}");
+                ()
+            });
+        })
     }
 }
 
