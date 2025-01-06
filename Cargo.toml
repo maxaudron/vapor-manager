@@ -34,6 +34,7 @@ known-folders = "1"
 nom = "7"
 num_enum = "0.7"
 strum = { version = "0.26", features = ["derive"] }
+regex = "1"
 
 paste = "1"
 

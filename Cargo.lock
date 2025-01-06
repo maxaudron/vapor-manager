@@ -4476,6 +4476,7 @@ dependencies = [
  "nom",
  "num_enum",
  "paste",
+ "regex",
  "serde",
  "serde_json",
  "strum",

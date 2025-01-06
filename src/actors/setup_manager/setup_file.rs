@@ -4,6 +4,7 @@ use std::{
     str::FromStr,
 };
 
+use regex::Regex;
 use tracing::debug;
 
 use crate::actors::ui::Weather;
@@ -111,12 +112,7 @@ impl SetupFile {
             .strategy
             .pit_strategy
             .iter_mut()
-            .for_each(|s| {
-                s.tyres
-                    .tyre_pressure
-                    .iter_mut()
-                    .for_each(|i| *i += diff as i32)
-            });
+            .for_each(|s| s.tyres.tyre_pressure.iter_mut().for_each(|i| *i += diff as i32));
 
         self.save();
     }
@@ -145,14 +141,31 @@ impl std::str::FromStr for SetupType {
     type Err = SetupError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(if s.contains(" Q ") || s.contains(" Qual") {
+        let quali_re = Regex::new(r" (Q|Quali)( |$)").unwrap();
+        let race_re = Regex::new(r" (R|Race)( |$)").unwrap();
+
+        Ok(if quali_re.is_match(s) {
             SetupType::Qualifying
-        } else if s.contains(" R ") || s.contains(" Race ") {
+        } else if race_re.is_match(s) {
             SetupType::Race
         } else {
             SetupType::Base
         })
     }
+}
+
+#[test]
+#[cfg(test)]
+fn test_setup_type() -> Result<(), SetupError> {
+    assert_eq!(SetupType::Qualifying, SetupType::from_str("20c 23c RW Q")?);
+    assert_eq!(SetupType::Qualifying, SetupType::from_str("20c 23c RW Quali")?);
+    assert_eq!(SetupType::Qualifying, SetupType::from_str("20c 23c RW Q Test")?);
+    assert_eq!(SetupType::Race, SetupType::from_str("20c 23c RW R")?);
+    assert_eq!(SetupType::Race, SetupType::from_str("20c 23c RW Race")?);
+    assert_eq!(SetupType::Race, SetupType::from_str("20c 23c RW R Test")?);
+    assert_eq!(SetupType::Base, SetupType::from_str("20c 23c RW Test")?);
+
+    Ok(())
 }
 
 #[test]

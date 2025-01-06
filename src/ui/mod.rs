@@ -3,7 +3,6 @@ use dioxus::{
     desktop::{tao::window::Icon, Config, LogicalSize, WindowBuilder},
     prelude::*,
 };
-use document::Stylesheet;
 
 use crate::{
     actors::{
