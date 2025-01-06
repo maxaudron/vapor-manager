@@ -1,7 +1,7 @@
 {
   "identifier": "systems.Vapor",
   "productName": "Vapor Manager",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "build": {
     "beforeBuildCommand": "",
     "beforeDevCommand": "",
